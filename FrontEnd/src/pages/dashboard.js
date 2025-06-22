@@ -33,6 +33,14 @@ export default function Dashboard() {
     }
   };
 
+  // Ejemplo: Llamar al endpoint /saludar
+async function saludarBackend() {
+    const nombre = "Luis";
+    const response = await fetch("http://localhost:8000/saludar?nombre=" + nombre);
+    const data = await response.json();
+    console.log(data.mensaje);  // ¡Hola, Luis!
+}
+
   const handleUpload = async () => {
     if (!file) {
       setError("Por favor, selecciona un archivo de audio");
@@ -85,6 +93,12 @@ export default function Dashboard() {
               Convierte tus grabaciones de piano en partituras
             </p>
           </div>
+          <button
+            onClick={saludarBackend}
+            className="mb-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Saludar
+          </button>
 
           <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
             <div className="p-8">
