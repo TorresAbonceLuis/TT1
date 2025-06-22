@@ -82,7 +82,7 @@ export default function Dashboard() {
               <span className="block w-24 h-1 bg-yellow-500 mx-auto mt-4"></span>
             </h1>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Convierte tus grabaciones de piano en partituras profesionales
+              Convierte tus grabaciones de piano en partituras
             </p>
           </div>
 
