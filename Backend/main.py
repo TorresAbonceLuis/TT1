@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse  # Nuevo: Para devolver archivos
 import os
 
 app = FastAPI()
@@ -7,7 +8,7 @@ app = FastAPI()
 # Configura CORS para tu frontend de Next.js (ajusta en producción)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # URL de tu frontend
+    allow_origins=["http://localhost:3000"],  # URL frontend
     allow_methods=["POST"],
     allow_headers=["*"],
 )
@@ -20,7 +21,7 @@ async def upload_audio(file: UploadFile = File(...)):
         if file.content_type not in allowed_types:
             raise HTTPException(status_code=400, detail="Formato no soportado. Sube archivos MP3, WAV u OGG.")
 
-        # Validar tamaño (10MB máximo)
+        # Validar tamaño (10MB máximo) se puede ajustar segun las necesidades
         max_size = 10 * 1024 * 1024
         if file.size > max_size:
             raise HTTPException(status_code=400, detail="El archivo es demasiado grande (máximo 10MB)")
@@ -31,7 +32,17 @@ async def upload_audio(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
 
-        return {"message": "Audio subido correctamente", "transcription": "Aquí iría la transcripción generada"}
+        # Devuelve el PDF estático (ruta relativa a tu backend)
+        pdf_path = "pdf/reporte1.pdf"
+        if not os.path.exists(pdf_path):
+            raise HTTPException(status_code=404, detail="PDF no encontrado")
+        #borrar el archivo de audio después de procesarlo
+        os.remove(file_path)
+        return FileResponse(
+            pdf_path,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=partitura.pdf"}
+        )
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
