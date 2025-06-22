@@ -50,7 +50,7 @@ export default function Dashboard() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await axios.post("http://localhost:8000/upload/", formData, {
+      const response = await axios.post("http://localhost:8000/api/v1/upload/", formData, {
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total

@@ -1,3 +1,10 @@
 fastapi
 uvicorn
 python-multipart
+librosa
+numpy 
+fpdf2 
+aiofiles
+python-dotenv
+pydantic-settings
+scipy
