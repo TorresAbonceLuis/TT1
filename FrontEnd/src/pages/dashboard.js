@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Head from "next/head";
 import Navbar from "../components/NavBar";
+import axios from "axios";
 
 export default function Dashboard() {
   const [file, setFile] = useState(null);
@@ -11,7 +12,7 @@ export default function Dashboard() {
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
-    setPdfUrl(null); // Resetear PDF anterior al seleccionar nuevo archivo
+    setPdfUrl(null);
     setError("");
 
     if (selectedFile) {
@@ -49,38 +50,26 @@ export default function Dashboard() {
       const formData = new FormData();
       formData.append("file", file);
 
-      // Simular progreso de subida
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = prev + 10;
-          if (newProgress >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return newProgress;
-        });
-      }, 300);
-
-      // Enviar archivo al backend
-      const response = await fetch("http://localhost:8000/upload/", {
-        method: "POST",
-        body: formData,
+      const response = await axios.post("http://localhost:8000/upload/", formData, {
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setProgress(percentCompleted);
+        },
+        responseType: 'blob', // Para recibir el PDF como blob
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
-      clearInterval(progressInterval);
-      setProgress(100);
-
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
-      // Recibir el PDF y crear URL para descarga
-      const pdfBlob = await response.blob();
+      // Crear URL para el PDF
+      const pdfBlob = new Blob([response.data], { type: "application/pdf" });
       const pdfUrl = URL.createObjectURL(pdfBlob);
       setPdfUrl(pdfUrl);
 
     } catch (err) {
-      setError(err.message || "Error al subir el archivo. Intenta nuevamente.");
+      setError(err.response?.data?.message || "Error al subir el archivo. Intenta nuevamente.");
     } finally {
       setIsUploading(false);
     }
@@ -159,39 +148,41 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {!pdfUrl ? (
-                    <button
-                      onClick={handleUpload}
-                      disabled={!file || isUploading}
-                      className={`w-full py-3 px-6 rounded-xl font-semibold text-lg flex items-center justify-center ${
-                        !file || isUploading
-                          ? "bg-gray-600 cursor-not-allowed"
-                          : "bg-red-600 hover:bg-red-700"
-                      } text-white transition-all duration-300 shadow-lg`}
-                    >
-                      {isUploading ? (
-                        <>
-                          <div className="w-full bg-gray-700 rounded-full h-4 mr-4">
-                            <div
-                              className="bg-yellow-500 h-4 rounded-full"
-                              style={{ width: `${progress}%` }}
-                            ></div>
-                          </div>
-                          Procesando... {progress}%
-                        </>
-                      ) : (
-                        "Subir y Transcribir"
-                      )}
-                    </button>
-                  ) : (
-                    <a
-                      href={pdfUrl}
-                      download="partitura.pdf"
-                      className="w-full py-3 px-6 rounded-xl font-semibold text-lg flex items-center justify-center bg-green-600 hover:bg-green-700 text-white transition-all duration-300 shadow-lg"
-                    >
-                      ↓ Descargar Partitura (PDF)
-                    </a>
-                  )}
+                  <div className="space-y-4">
+                    {!pdfUrl ? (
+                      <button
+                        onClick={handleUpload}
+                        disabled={!file || isUploading}
+                        className={`w-full py-3 px-6 rounded-xl font-semibold text-lg flex items-center justify-center ${
+                          !file || isUploading
+                            ? "bg-gray-600 cursor-not-allowed"
+                            : "bg-red-600 hover:bg-red-700"
+                        } text-white transition-all duration-300 shadow-lg`}
+                      >
+                        {isUploading ? (
+                          <>
+                            <div className="w-full bg-gray-700 rounded-full h-4 mr-4">
+                              <div
+                                className="bg-yellow-500 h-4 rounded-full transition-all duration-300"
+                                style={{ width: `${progress}%` }}
+                              ></div>
+                            </div>
+                            Subiendo... {progress}%
+                          </>
+                        ) : (
+                          "Subir y Transcribir"
+                        )}
+                      </button>
+                    ) : (
+                      <a
+                        href={pdfUrl}
+                        download="partitura.pdf"
+                        className="w-full py-3 px-6 rounded-xl font-semibold text-lg flex items-center justify-center bg-green-600 hover:bg-green-700 text-white transition-all duration-300 shadow-lg"
+                      >
+                        ↓ Descargar Partitura (PDF)
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
 
