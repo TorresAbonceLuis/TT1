@@ -33,46 +33,39 @@ export default function Dashboard() {
     }
   };
 
-  // Ejemplo: Llamar al endpoint /saludar
-async function saludarBackend() {
-    const nombre = "Luis";
-    const response = await fetch("http://localhost:8000/saludar?nombre=" + nombre);
-    const data = await response.json();
-    console.log(data.mensaje);  // ¡Hola, Luis!
-}
-
-  const handleUpload = async () => {
+const handleUpload = async () => {
     if (!file) {
-      setError("Por favor, selecciona un archivo de audio");
-      return;
+        setError("Por favor, selecciona un archivo de audio");
+        return;
     }
 
     setIsUploading(true);
     setError("");
     
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+        const formData = new FormData();
+        formData.append("file", file);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+        // Cambia esta URL según donde esté alojado tu backend
+        const response = await fetch("http://localhost:8000/upload/", {
+            method: "POST",
+            body: formData,
+        });
 
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
 
-      const data = await response.json();
-      setUploadSuccess(`¡Archivo subido correctamente! Transcripción: ${data.transcription}`);
-      setFile(null);
-      document.getElementById("audio-upload").value = "";
+        const data = await response.json();
+        setUploadSuccess(`¡Archivo subido correctamente! Transcripción: ${data.transcription}`);
+        setFile(null);
+        document.getElementById("audio-upload").value = "";
     } catch (err) {
-      setError(err.message || "Error al subir el archivo. Intenta nuevamente.");
+        setError(err.message || "Error al subir el archivo. Intenta nuevamente.");
     } finally {
-      setIsUploading(false);
+        setIsUploading(false);
     }
-  };
+};
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-900 text-white">
@@ -93,13 +86,6 @@ async function saludarBackend() {
               Convierte tus grabaciones de piano en partituras
             </p>
           </div>
-          <button
-            onClick={saludarBackend}
-            className="mb-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            Saludar
-          </button>
-
           <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
             <div className="p-8">
               <div className="mb-8">
