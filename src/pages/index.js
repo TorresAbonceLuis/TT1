@@ -69,7 +69,10 @@ export default function Home() {
               alt="Interfaz de Audio a Notación" 
               width={800}
               height={450}
-              layout="responsive"
+              style={{
+                width: '100%',
+                height: 'auto'
+              }}
               quality={80}
               priority
             />
@@ -92,7 +95,9 @@ export default function Home() {
                   alt="Jeshua Jonathan" 
                   width={128}
                   height={128}
-                  objectFit="cover"
+                  style={{
+                    objectFit: 'cover'
+                  }}
                 />
               </div>
               <h3 className="text-2xl font-semibold text-red-600">Salazar Carreón Jeshua Jonathan</h3>
@@ -107,7 +112,9 @@ export default function Home() {
                   alt="Luis Miguel" 
                   width={128}
                   height={128}
-                  objectFit="cover"
+                  style={{
+                    objectFit: 'cover'
+                  }}
                 />
               </div>
               <h3 className="text-2xl font-semibold text-red-600">Torres Abonce Luis Miguel</h3>
