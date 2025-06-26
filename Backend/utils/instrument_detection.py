@@ -2,6 +2,7 @@ import wave
 import math
 import struct
 import numpy as np
+import cmath
 
 def read_wav(file_path):
     """Lee un archivo WAV y devuelve los datos de audio y la tasa de muestreo"""
@@ -36,6 +37,37 @@ def compute_fft(samples, framerate):
     frequencies = np.fft.fftfreq(n, 1/framerate)[:n//2]
     return frequencies, magnitudes
 
+def compute_ffts(samples, framerate,zero_padding):
+    """Calcula la FFT con zero-padding a la potencia de 2 más cercana"""
+    n = len(samples)
+    
+    # Convertir samples a lista si es una tupla
+    samples_list = list(samples)  # Esto soluciona el TypeError
+    
+    # Encontrar la siguiente potencia de 2
+    next_pow2 = 1 << (n - 1).bit_length() if n > 0 else 1
+    
+    # Añadir zero-padding
+    padded_samples = samples_list + [0.0] * (next_pow2 - n)
+    
+    # Implementación FFT para potencias de 2
+    def fft(x):
+        N = len(x)
+        if N <= 1:
+            return x
+        even = fft(x[0::2])
+        odd = fft(x[1::2])
+        T = [cmath.exp(-2j * cmath.pi * k / N) * odd[k] for k in range(N // 2)]
+        return [even[k] + T[k] for k in range(N // 2)] + [even[k] - T[k] for k in range(N // 2)]
+    
+    fft_result = fft(padded_samples)
+    
+    # Tomar solo la parte correspondiente a las muestras originales
+    magnitudes = [abs(x) * 2 / n for x in fft_result[:n // 2]]
+    frequencies = [k * framerate / n for k in range(n // 2)]
+    
+    return frequencies, magnitudes
+
 def analyze_instrument(file_path):
     """Analiza el archivo de audio para determinar el instrumento y frecuencia"""
     samples, framerate = read_wav(file_path)
@@ -56,7 +88,7 @@ def analyze_instrument(file_path):
     
     # Determinar el instrumento
     is_flute = (
-        attack_slope < 0.01 and 
+        attack_slope < 0.6 and 
         max(magnitudes) / np.mean(magnitudes) > 10
     )
     
