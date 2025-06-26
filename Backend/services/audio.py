@@ -1,29 +1,21 @@
 from utils.instrument_detection import analyze_instrument
 from fastapi import HTTPException
-import os
 
-async def get_instrument_info(file_path: str):
-    """Obtiene información del instrumento desde el archivo de audio"""
+async def process_audio_file(file_path: str):
+    """Wrapper para mantener compatibilidad con FastAPI"""
     try:
-        if not os.path.exists(file_path):
-            raise HTTPException(status_code=404, detail="Archivo no encontrado")
-        
-        result = await analyze_instrument(file_path)
-        
-        # Asegurar que el resultado tenga los campos necesarios
-        if 'predicted_instrument' in result:
-            result['instrument'] = result.pop('predicted_instrument')
+        # Usamos tu función original modificada
+        result = analyze_instrument(file_path)
         
         return {
-            "instrument": result.get("instrument", "desconocido"),
-            "confidence": result.get("confidence", 0.0),
-            "features": result.get("features", {})
+            "instrument": result["instrument"],
+            "frequency": result["frequency"]  # Solo devolvemos instrumento y frecuencia
         }
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error al analizar el audio: {str(e)}"
+            detail=f"Error en análisis de audio: {str(e)}"
         )
 
-# Definir el alias después de la función principal
-process_audio_file = get_instrument_info
+# Alias para compatibilidad
+get_instrument_info = process_audio_file

@@ -1,50 +1,66 @@
-import librosa
+import wave
+import math
+import struct
 import numpy as np
-from typing import Dict
 
-# Modelo simplificado (deberías reemplazarlo con tu modelo real)
-INSTRUMENT_PROFILES = {
-    "piano": {
-        "spectral_centroid": (2000, 4000),
-        "zero_crossing_rate": (0.05, 0.15)
-    },
-    "guitar": {
-        "spectral_centroid": (1500, 3500),
-        "zero_crossing_rate": (0.1, 0.25)
-    },
-    "violin": {
-        "spectral_centroid": (3000, 5000),
-        "zero_crossing_rate": (0.15, 0.3)
-    }
-}
+def read_wav(file_path):
+    """Lee un archivo WAV y devuelve los datos de audio y la tasa de muestreo"""
+    with wave.open(file_path, 'rb') as wav_file:
+        n_channels = wav_file.getnchannels()
+        sample_width = wav_file.getsampwidth()
+        framerate = wav_file.getframerate()
+        n_frames = wav_file.getnframes()
+        frames = wav_file.readframes(n_frames)
+        
+        # Convertir los datos binarios a valores numéricos
+        if sample_width == 1:
+            fmt = f"{n_frames * n_channels}b"  # 8-bit signed
+        elif sample_width == 2:
+            fmt = f"{n_frames * n_channels}h"  # 16-bit signed
+        else:
+            raise ValueError("Solo soportamos archivos WAV de 8 o 16 bits")
+            
+        samples = struct.unpack(fmt, frames)
+        
+        # Si es estéreo, promediar los canales
+        if n_channels == 2:
+            samples = [(samples[i] + samples[i+1])/2 for i in range(0, len(samples), 2)]
+            
+        return samples, framerate
 
-async def analyze_instrument(file_path: str) -> Dict:
-    """
-    Analiza el archivo de audio y predice el instrumento
-    """
-    # Cargar archivo de audio
-    y, sr = librosa.load(file_path, duration=10)  # Analizar solo los primeros 10s
+def compute_fft(samples, framerate):
+    """Calcula la FFT y devuelve las frecuencias y magnitudes"""
+    n = len(samples)
+    fft_result = np.fft.fft(samples)
+    magnitudes = np.abs(fft_result)[:n//2] * 2 / n
+    frequencies = np.fft.fftfreq(n, 1/framerate)[:n//2]
+    return frequencies, magnitudes
+
+def analyze_instrument(file_path):
+    """Analiza el archivo de audio para determinar el instrumento y frecuencia"""
+    samples, framerate = read_wav(file_path)
     
-    # Extraer características
-    spectral_centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr))
-    zero_crossing_rate = np.mean(librosa.feature.zero_crossing_rate(y))
+    # Calcular la envolvente del sonido
+    envelope = [abs(s) for s in samples]
     
-    # Comparar con perfiles conocidos
-    scores = {}
-    for instrument, ranges in INSTRUMENT_PROFILES.items():
-        centroid_match = (ranges["spectral_centroid"][0] <= spectral_centroid <= ranges["spectral_centroid"][1])
-        zcr_match = (ranges["zero_crossing_rate"][0] <= zero_crossing_rate <= ranges["zero_crossing_rate"][1])
-        scores[instrument] = (centroid_match + zcr_match) / 2
+    # Calcular estadísticas de la envolvente
+    attack_time = len(envelope) // 10  # Tiempo de ataque (primer 10%)
+    attack_slope = (max(envelope[:attack_time]) - envelope[0]) / attack_time
     
-    # Obtener mejor coincidencia
-    predicted_instrument = max(scores.items(), key=lambda x: x[1])[0]
-    confidence = scores[predicted_instrument]
+    # Calcular FFT
+    frequencies, magnitudes = compute_fft(samples, framerate)
+    
+    # Encontrar la frecuencia fundamental
+    fundamental_idx = np.argmax(magnitudes)
+    fundamental_freq = frequencies[fundamental_idx]
+    
+    # Determinar el instrumento
+    is_flute = (
+        attack_slope < 0.01 and 
+        max(magnitudes) / np.mean(magnitudes) > 10
+    )
     
     return {
-        "predicted_instrument": predicted_instrument,
-        "confidence": float(confidence),
-        "features": {
-            "spectral_centroid": float(spectral_centroid),
-            "zero_crossing_rate": float(zero_crossing_rate)
-        }
+        "instrument": "Flauta" if is_flute else "Piano",
+        "frequency": fundamental_freq  # Frecuencia en Hz
     }

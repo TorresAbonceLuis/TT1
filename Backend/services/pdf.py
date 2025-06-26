@@ -35,7 +35,7 @@ class PDFReport(FPDF):
         self.line(10, self.get_y(), 200, self.get_y())
         self.ln(10)
 
-def generate_pdf_report(original_filename: str, instrument: str, confidence: float):
+def generate_pdf_report(original_filename: str, instrument: str, frequency: float):
     pdf = PDFReport()
     pdf.add_page()
     
@@ -48,7 +48,7 @@ def generate_pdf_report(original_filename: str, instrument: str, confidence: flo
     pdf.set_font('Arial', '', 12)
     pdf.cell(0, 10, f'Archivo analizado: {original_filename}', 0, 1)
     pdf.cell(0, 10, f'Instrumento detectado: {instrument.capitalize()}', 0, 1)
-    pdf.cell(0, 10, f'Confianza: {confidence:.2%}', 0, 1)
+    pdf.cell(0, 10, f'Frecuencia fundamental: {frequency:.2f} Hz', 0, 1)  # Mostramos frecuencia
     pdf.ln(15)
     
     # Datos técnicos

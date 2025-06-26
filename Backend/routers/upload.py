@@ -1,10 +1,9 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from services.audio import process_audio_file
 from services.pdf import generate_pdf_report
-from utils.file_handling import save_uploaded_file, cleanup_files  # Importación corregida
+from utils.file_handling import save_uploaded_file, cleanup_files
 import os
-from fastapi import HTTPException
 
 router = APIRouter()
 
@@ -15,39 +14,27 @@ async def upload_audio(file: UploadFile = File(...)):
         # 1. Guardar archivo temporalmente
         temp_audio_path = await save_uploaded_file(file)
         
-        # 2. Procesar audio
-        instrument_info = await process_audio_file(temp_audio_path)
+        # 2. Procesar audio con tu código original modificado
+        analysis_result = await process_audio_file(temp_audio_path)
         
-        # Validar campos requeridos
-        if not all(key in instrument_info for key in ['instrument', 'confidence']):
-            raise HTTPException(
-                status_code=500,
-                detail="El análisis no devolvió los campos requeridos"
-            )
-        
-        # 3. Generar PDF
+        # 3. Generar PDF con frecuencia
         pdf_path = generate_pdf_report(
             original_filename=file.filename,
-            instrument=instrument_info['instrument'],
-            confidence=instrument_info['confidence']
+            instrument=analysis_result["instrument"],
+            frequency=analysis_result["frequency"]  # Pasamos la frecuencia
         )
         
         # 4. Devolver PDF
         return FileResponse(
             pdf_path,
             media_type="application/pdf",
-            filename=f"{os.path.splitext(file.filename)[0]}_{instrument_info['instrument']}.pdf"
+            filename=f"{os.path.splitext(file.filename)[0]}_{analysis_result['instrument']}.pdf"
         )
         
-    except HTTPException as he:
-        return JSONResponse(
-            status_code=he.status_code,
-            content={"error": str(he.detail)}
-        )
     except Exception as e:
         return JSONResponse(
             status_code=500,
-            content={"error": f"Error en el servidor: {str(e)}"}
+            content={"error": str(e)}
         )
     finally:
         if temp_audio_path and os.path.exists(temp_audio_path):

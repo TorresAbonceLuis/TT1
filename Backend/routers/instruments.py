@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from schemas import InstrumentAnalysis
-from services.audio import get_instrument_info
+from services.audio import get_instrument_info  # Importación corregida
 from utils.file_handling import cleanup_files
 import os
 from config import settings
@@ -10,7 +9,7 @@ router = APIRouter(
     tags=["instruments"]
 )
 
-@router.get("/detect-from-file/{filename}", response_model=InstrumentAnalysis)
+@router.get("/detect-from-file/{filename}")
 async def detect_instrument(filename: str):
     try:
         filepath = os.path.join(settings.UPLOAD_FOLDER, filename)
@@ -21,11 +20,10 @@ async def detect_instrument(filename: str):
         return {
             "instrument": analysis["instrument"],
             "confidence": analysis["confidence"],
-            "features": analysis["features"],
-            "original_filename": filename
+            "features": analysis.get("features", {})
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        if 'filepath' in locals():
+        if 'filepath' in locals() and os.path.exists(filepath):
             cleanup_files([filepath])

@@ -8,3 +8,5 @@ aiofiles
 python-dotenv
 pydantic-settings
 scipy
+pydub
+ffmpeg-python
