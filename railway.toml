@@ -1,8 +1,46 @@
-[build]
-builder = "NIXPACKS"
-buildCommand = "pip install -r Backend/requeriment.txt"
+[Region: us-east4]
+==============
+Using Nixpacks
+==============
 
-[deploy]
-startCommand = "cd Backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
+context: 2s09-0Mbp
+╔════════════════════════════ Nixpacks v1.38.0 ═══════════════════════════╗
+║ build      │ pip install -r Backend/requeriment.txt                     ║
+║─────────────────────────────────────────────────────────────────────────║
+║ start      │ cd Backend && uvicorn main:app --host 0.0.0.0 --port $PORT ║
+╚═════════════════════════════════════════════════════════════════════════╝
+
+internal
+load build definition from Dockerfile
+0ms
+
+internal
+load metadata for ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+122ms
+
+internal
+load .dockerignore
+0ms
+
+internal
+load build context
+0ms
+
+3
+COPY . /app/.
+80ms
+
+4
+RUN  pip install -r Backend/requeriment.txt
+143ms
+/bin/bash: line 1: pip: command not found
+Dockerfile:15
+-------------------
+13 |     # build phase
+14 |     COPY . /app/.
+15 | >>> RUN  pip install -r Backend/requeriment.txt
+16 |
+17 |
+-------------------
+ERROR: failed to build: failed to solve: process "/bin/bash -ol pipefail -c pip install -r Backend/requeriment.txt" did not complete successfully: exit code: 127
+Error: Docker build failed
