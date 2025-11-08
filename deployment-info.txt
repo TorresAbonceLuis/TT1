@@ -1,0 +1,25 @@
+Piano Transcription API - Azure Deployment
+==========================================
+
+Fecha: Sat Nov  8 15:13:41 CST 2025
+Región: centralus
+
+Recursos:
+- Grupo: pianotranscription-rg
+- Registry: ptacr635892
+- App: pt-api
+
+URL: https://
+
+El modelo está incluido en la imagen Docker (14MB).
+
+Comandos útiles:
+----------------
+# Ver logs
+az containerapp logs show --name pt-api --resource-group pianotranscription-rg --follow
+
+# Reiniciar
+az containerapp revision restart --name pt-api --resource-group pianotranscription-rg
+
+# Eliminar
+az group delete --name pianotranscription-rg --yes
