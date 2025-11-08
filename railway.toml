@@ -10,4 +10,4 @@ restartPolicyMaxRetries = 10
 
 [nixpacks]
 # Sólo se necesita especificar la versión de Python, Nixpacks se encarga de incluir 'pip'
-nixpkgs = ["python39"]
+nixpkgs = ["python39"]#
