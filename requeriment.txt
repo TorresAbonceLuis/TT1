@@ -1,0 +1,24 @@
+fastapi
+uvicorn
+python-multipart
+librosa
+numpy 
+fpdf2 
+aiofiles
+python-dotenv
+pydantic-settings
+scipy
+pydub
+ffmpeg-python
+
+# Transcripción de Piano
+tensorflow>=2.15.0
+keras>=3.0.0
+pretty_midi
+music21
+tqdm
+
+# Optional para music21 (generación de partituras)
+# Instalación manual recomendada:
+# - MuseScore: https://musescore.org/
+# - Lilypond: https://lilypond.org/
