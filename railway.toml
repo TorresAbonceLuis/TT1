@@ -1,7 +1,7 @@
 [build]
 builder = "NIXPACKS"
-# CAMBIO CLAVE: Usamos 'python -m pip' para asegurar que se encuentra el binario de pip
-buildCommand = "cd Backend && python -m pip install -r requeriment.txt" 
+# CAMBIO CLAVE: Usar el binario explícito 'python3.9'
+buildCommand = "cd Backend && python3.9 -m pip install -r requeriment.txt" 
 
 [deploy]
 startCommand = "cd Backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
@@ -9,5 +9,5 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 [nixpacks]
-# Sólo se necesita especificar la versión de Python, Nixpacks se encarga de incluir 'pip'
-nixpkgs = ["python39"]#
+# Asegúrate de que esto siga siendo 'python39'
+nixpkgs = ["python39"]
