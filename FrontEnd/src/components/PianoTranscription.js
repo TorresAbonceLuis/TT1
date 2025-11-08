@@ -15,7 +15,7 @@ const PianoTranscription = () => {
   const [hasPdf, setHasPdf] = useState(false);
   
   const eventSourceRef = useRef(null);
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://pt-api.whitewater-3f1ca299.centralus.azurecontainerapps.io/';
 
   // Limpiar EventSource al desmontar
   useEffect(() => {
