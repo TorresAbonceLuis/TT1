@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd Backend && pip install -r requeriment.txt"
+buildCommand = "cd Backend && pip install -r requeriment.txt" # El archivo de requerimientos está en la carpeta 'Backend'
 
 [deploy]
 startCommand = "cd Backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
@@ -8,4 +8,6 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 [nixpacks]
-nixPkgs = ["python39", "pip"]
+# Solamente especifica la versión de Python. Nixpacks es lo suficientemente inteligente
+# para incluir PIP junto con el intérprete.
+nixpkgs = ["python39"]
