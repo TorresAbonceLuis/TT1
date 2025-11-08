@@ -1,17 +1,13 @@
 [build]
 builder = "NIXPACKS"
-# 1. CLAVE: Mantenemos la baseDirectory para que el build se ejecute dentro de 'Backend'.
 baseDirectory = "Backend" 
-# 2. CLAVE: Forzamos la instalación usando el binario python3.9.
-# Como ya estamos en la baseDirectory "Backend", la ruta a requeriment.txt es directa.
-buildCommand = "python3.9 -m pip install -r requeriment.txt" 
+# CAMBIO CLAVE: Usamos 'python3' en lugar de 'python3.9'.
+buildCommand = "python3 -m pip install -r requeriment.txt" 
 
 [deploy]
-# 3. CLAVE: Mantenemos el startCommand simple, ya que la baseDirectory lo maneja.
 startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 [nixpacks]
-# 4. CLAVE: Especificamos la versión para que 'python3.9' esté disponible.
 nixpkgs = ["python39"]
