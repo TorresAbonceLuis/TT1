@@ -1,11 +1,14 @@
 [build]
 builder = "NIXPACKS"
-# Se elimina el comando de activación problemático.
-# Usamos 'python3 -m pip' para asegurar que el pip asociado al intérprete de python3 se use.
-buildCommand = "python3 -m pip install -r requeriment.txt" 
+# La variable $NIXPACKS_ACTIVATE_ENV debe contener el PATH necesario.
+# Si la versión de 'pip' no se encuentra, la activamos con 'source' y luego usamos 'pip'.
+buildCommand = "source $NIXPACKS_ACTIVATE_ENV && pip install -r requeriment.txt" 
+# NOTA: Si 'source' falla (como en el intento anterior), la única alternativa es usar:
+# buildCommand = "python3 -m pip install -r requeriment.txt" 
+# ...pero como eso falló con 'No module named pip', intentaremos con el PATH de Nixpacks.
 
 [deploy]
-# El startCommand ya está corregido para usar el módulo de Python.
+# Mantenemos esto porque es la forma más robusta de iniciar la app.
 startCommand = "python3 -m uvicorn main:app --host 0.0.0.0 --port $PORT" 
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
@@ -13,5 +16,6 @@ restartPolicyMaxRetries = 10
 [nixpacks]
 nixpkgs = [
     "python39",
-    "lilypond"
+    "lilypond",
+    "pip" # <--- AÑADIMOS 'pip' de forma explícita a los nixpkgs
 ]
