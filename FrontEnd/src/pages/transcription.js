@@ -74,7 +74,7 @@ export default function TranscriptionPage() {
               </li>
               <li className="flex items-start">
                 <span className="font-bold text-red-500 mr-3">2.</span>
-                <span>Haz clic en 'Iniciar Transcripción' y espera mientras la IA procesa tu audio</span>
+                <span>Haz clic en &quot;Iniciar Transcripción&quot; y espera mientras la IA procesa tu audio</span>
               </li>
               <li className="flex items-start">
                 <span className="font-bold text-red-500 mr-3">3.</span>
