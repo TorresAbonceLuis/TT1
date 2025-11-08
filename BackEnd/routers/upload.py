@@ -131,6 +131,35 @@ async def run_transcription_task(task_id: str):
             cleanup_files([audio_path])
 
 
+async def cleanup_task_files(task_id: str, delay: int = 5):
+    """
+    Limpia los archivos asociados a una tarea después de un delay.
+    Se ejecuta después de que el usuario descargue los archivos.
+    """
+    await asyncio.sleep(delay)
+    
+    if task_id in transcription_status:
+        task_data = transcription_status[task_id]
+        files_to_delete = []
+        
+        # Agregar MIDI si existe
+        if task_data.get("midi_path") and os.path.exists(task_data["midi_path"]):
+            files_to_delete.append(task_data["midi_path"])
+        
+        # Agregar PDF si existe
+        if task_data.get("pdf_path") and os.path.exists(task_data["pdf_path"]):
+            files_to_delete.append(task_data["pdf_path"])
+        
+        # Eliminar archivos
+        if files_to_delete:
+            cleanup_files(files_to_delete)
+            print(f"🗑️  Archivos de tarea {task_id} eliminados: {len(files_to_delete)} archivos")
+        
+        # Eliminar entrada del diccionario de estado
+        del transcription_status[task_id]
+        print(f"✅ Tarea {task_id} limpiada completamente")
+
+
 @router.get("/transcribe/status/{task_id}")
 async def get_transcription_status(task_id: str):
     """
@@ -202,6 +231,7 @@ async def stream_transcription_progress(task_id: str):
 async def download_midi(task_id: str):
     """
     Descarga el archivo MIDI generado.
+    Marca el archivo para limpieza después de la descarga.
     """
     if task_id not in transcription_status:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
@@ -216,6 +246,13 @@ async def download_midi(task_id: str):
     
     filename = os.path.splitext(task_data["filename"])[0] + ".mid"
     
+    # Marcar que el MIDI fue descargado
+    task_data["midi_downloaded"] = True
+    
+    # Programar limpieza si ambos archivos fueron descargados
+    if task_data.get("midi_downloaded") and task_data.get("pdf_downloaded"):
+        asyncio.create_task(cleanup_task_files(task_id, delay=5))
+    
     return FileResponse(
         task_data["midi_path"],
         media_type="audio/midi",
@@ -227,6 +264,7 @@ async def download_midi(task_id: str):
 async def download_pdf_sheet(task_id: str):
     """
     Descarga la partitura en PDF.
+    Marca el archivo para limpieza después de la descarga.
     """
     if task_id not in transcription_status:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
@@ -241,8 +279,60 @@ async def download_pdf_sheet(task_id: str):
     
     filename = os.path.splitext(task_data["filename"])[0] + "_partitura.pdf"
     
+    # Marcar que el PDF fue descargado
+    task_data["pdf_downloaded"] = True
+    
+    # Programar limpieza si ambos archivos fueron descargados
+    if task_data.get("midi_downloaded") and task_data.get("pdf_downloaded"):
+        asyncio.create_task(cleanup_task_files(task_id, delay=5))
+    
     return FileResponse(
         task_data["pdf_path"],
         media_type="application/pdf",
         filename=filename
     )
+
+
+@router.get("/transcribe/cleanup-status")
+async def get_cleanup_status():
+    """
+    Endpoint para monitorear el estado de los archivos temporales.
+    Útil para debugging y verificar que la limpieza funcione.
+    """
+    from config import settings
+    import time
+    
+    temp_dir = settings.UPLOAD_FOLDER
+    
+    if not os.path.exists(temp_dir):
+        return JSONResponse(content={
+            "temp_folder": temp_dir,
+            "exists": False,
+            "message": "Carpeta temporal no existe"
+        })
+    
+    files_info = []
+    total_size = 0
+    
+    for filename in os.listdir(temp_dir):
+        file_path = os.path.join(temp_dir, filename)
+        if os.path.isfile(file_path):
+            file_stat = os.stat(file_path)
+            file_age_hours = (time.time() - file_stat.st_mtime) / 3600
+            file_size_kb = file_stat.st_size / 1024
+            
+            files_info.append({
+                "filename": filename,
+                "size_kb": round(file_size_kb, 2),
+                "age_hours": round(file_age_hours, 2),
+                "will_be_deleted": file_age_hours > 1
+            })
+            total_size += file_size_kb
+    
+    return JSONResponse(content={
+        "temp_folder": temp_dir,
+        "total_files": len(files_info),
+        "total_size_mb": round(total_size / 1024, 2),
+        "active_tasks": len(transcription_status),
+        "files": files_info
+    })
