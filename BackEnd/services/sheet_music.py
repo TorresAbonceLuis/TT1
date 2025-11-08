@@ -32,16 +32,39 @@ def midi_to_pdf_sheet_music(
     
     try:
         print(f"🎵 Convirtiendo MIDI a PDF con MuseScore...")
-        musescore_path = '/opt/homebrew/bin/mscore'
+        # Detectar ruta de MuseScore según el sistema operativo
+        import shutil
+        musescore_path = shutil.which('mscore3') or shutil.which('mscore') or shutil.which('musescore') or '/usr/bin/mscore3'
+        
+        if not os.path.exists(musescore_path) and not shutil.which('mscore3'):
+            raise FileNotFoundError(f"MuseScore no encontrado. Buscado en: {musescore_path}")
+        
+        print(f"📍 Usando MuseScore en: {musescore_path}")
         
         # Convertir MIDI directamente a PDF usando MuseScore
+        # Usar xvfb-run para crear un display virtual (necesario en contenedores sin GUI)
         # -o especifica el archivo de salida
-        # Redirigir stderr a /dev/null para suprimir warnings de Qt (que no afectan la conversión)
+        xvfb_path = shutil.which('xvfb-run')
+        
+        # Preparar entorno y comando según disponibilidad de xvfb
+        env = None
+        if xvfb_path:
+            # Usar xvfb-run para ejecutar MuseScore sin display
+            print(f"🖥️  Usando xvfb-run para display virtual")
+            command = [xvfb_path, '-a', musescore_path, midi_path, '-o', output_pdf_path]
+        else:
+            # Intentar con QT_QPA_PLATFORM=offscreen como fallback
+            print(f"⚠️  xvfb-run no disponible, usando offscreen mode")
+            command = [musescore_path, midi_path, '-o', output_pdf_path]
+            env = os.environ.copy()
+            env['QT_QPA_PLATFORM'] = 'offscreen'
+        
         result = subprocess.run(
-            [musescore_path, midi_path, '-o', output_pdf_path],
+            command,
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
+            env=env
         )
         
         # MuseScore 4 siempre genera warnings de Qt/QML en stderr, pero funcionan correctamente
@@ -59,8 +82,8 @@ def midi_to_pdf_sheet_music(
         
     except subprocess.TimeoutExpired:
         raise Exception("MuseScore tardó demasiado tiempo (timeout 30s)")
-    except FileNotFoundError:
-        raise Exception("MuseScore no está instalado en /opt/homebrew/bin/mscore")
+    except FileNotFoundError as e:
+        raise Exception(f"MuseScore no está instalado o no se encuentra. Error: {str(e)}")
     except Exception as e:
         # Última verificación: ¿se creó el PDF de todas formas?
         if os.path.exists(output_pdf_path) and os.path.getsize(output_pdf_path) > 0:

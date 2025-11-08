@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: piano-transcription-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Montar el modelo para no tener que reconstruir la imagen
+      - ./modelos:/app/modelos:ro
+      # Directorio temporal para uploads
+      - ./temp_uploads:/app/temp_uploads
+    environment:
+      - ENV=development
+      - FRONTEND_URL=http://localhost:3000
+      - MODEL_PATH=/app/modelos/modelo.keras
+      - UPLOAD_FOLDER=/app/temp_uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
