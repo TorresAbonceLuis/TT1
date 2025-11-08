@@ -1,0 +1,33 @@
+# Archivos temporales de Backend
+Backend/temp_uploads/*.wav
+Backend/temp_uploads/*.mp3
+Backend/temp_uploads/*.mid
+Backend/temp_uploads/*.midi
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Node
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
