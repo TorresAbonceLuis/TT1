@@ -1,10 +1,11 @@
 [build]
 builder = "NIXPACKS"
-# Reintroducimos el buildCommand. El entorno de Nixpacks usa $NIXPACKS_PATH para instalar.
-buildCommand = "source $NIXPACKS_ACTIVATE_ENV && pip install -r requeriment.txt"
+# Se elimina el comando de activación problemático.
+# Usamos 'python3 -m pip' para asegurar que el pip asociado al intérprete de python3 se use.
+buildCommand = "python3 -m pip install -r requeriment.txt" 
 
 [deploy]
-# Mantenemos el startCommand corregido para que el binario de Python lo encuentre.
+# El startCommand ya está corregido para usar el módulo de Python.
 startCommand = "python3 -m uvicorn main:app --host 0.0.0.0 --port $PORT" 
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
