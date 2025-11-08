@@ -1,19 +1,18 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Any
 
-class AudioUpload(BaseModel):
-    filename: str
-    content_type: str
-    size: int
+class TranscriptionStatus(BaseModel):
+    """Estado de una tarea de transcripción"""
+    task_id: str
+    status: str  # "processing", "completed", "error"
+    progress: int  # 0-100
+    message: str
+    midi_path: Optional[str] = None
+    pdf_path: Optional[str] = None
+    transcription_info: Optional[Dict[str, Any]] = None
 
-class InstrumentAnalysis(BaseModel):
-    instrument: str
-    confidence: float
-    features: dict
-    original_filename: str
-
-class PDFResponse(BaseModel):
-    filename: str
-    path: str
-    instrument: str
-    download_url: Optional[str] = None
+class TranscriptionResponse(BaseModel):
+    """Respuesta al iniciar una transcripción"""
+    task_id: str
+    message: str
+    status: str

@@ -1,25 +1,28 @@
 from pathlib import Path
-from pydantic_settings import BaseSettings  # Cambiado aquí
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Configuración de la aplicación
-    APP_NAME: str = "Music Instrument Detector"
+    APP_NAME: str = "Piano Transcription API"
     DEBUG: bool = True
     
     # Configuración de archivos
     UPLOAD_FOLDER: str = "temp_uploads"
-    PDF_OUTPUT_FOLDER: str = "pdf_reports"
-    ALLOWED_EXTENSIONS: set = {".mp3", ".wav", ".ogg"}
-    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    ALLOWED_EXTENSIONS: set = {".wav"}
+    MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
     
-    # Configuración del modelo
-    MODEL_PATH: str = "models/instrument_classifier.pkl"
+    # Configuración del modelo de transcripción
+    MODEL_PATH: str = "modelos/modelo.keras"
+    
+    # Configuración de audio
+    SAMPLE_RATE: int = 22050
+    HOP_LENGTH: int = 512
+    N_MELS: int = 128
     
     class Config:
         env_file = ".env"
 
 # Crear carpetas si no existen
-Path(Settings().UPLOAD_FOLDER).mkdir(exist_ok=True)  # Corregido aquí
-Path(Settings().PDF_OUTPUT_FOLDER).mkdir(exist_ok=True)  # Corregido aquí
+Path(Settings().UPLOAD_FOLDER).mkdir(exist_ok=True)
 
 settings = Settings()

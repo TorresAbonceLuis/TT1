@@ -19,7 +19,7 @@ export default function Home() {
           <p className="text-xl md:text-2xl font-light max-w-2xl mx-auto mb-8">
             Transforma tus interpretaciones de piano en partituras de forma automática
           </p>
-          <Link href="/dashboard" className="inline-block bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-semibold px-8 py-3 rounded-full transition-all duration-300 transform hover:-translate-y-1 shadow-lg">
+          <Link href="/transcription" className="inline-block bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-semibold px-8 py-3 rounded-full transition-all duration-300 transform hover:-translate-y-1 shadow-lg">
             Obtener Partitura
           </Link>
         </div>

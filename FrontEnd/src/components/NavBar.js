@@ -7,7 +7,13 @@ const Navbar = () => {
         href="/" 
         className="text-xl font-bold hover:text-gray-300 transition-colors flex items-center"
       >
-        🎵 AudioTranscriber
+        � Piano Transcription
+      </Link>
+      <Link 
+        href="/transcription" 
+        className="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-semibold px-6 py-2 rounded-full transition-colors"
+      >
+        Transcribir
       </Link>
     </nav>
   );
