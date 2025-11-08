@@ -1,7 +1,7 @@
 [build]
 builder = "NIXPACKS"
 # Reintroducimos el buildCommand. El entorno de Nixpacks usa $NIXPACKS_PATH para instalar.
-buildCommand = ". $NIXPACKS_ACTIVATE_ENV && pip install -r requeriment.txt"
+buildCommand = "source $NIXPACKS_ACTIVATE_ENV && pip install -r requeriment.txt"
 
 [deploy]
 # Mantenemos el startCommand corregido para que el binario de Python lo encuentre.
