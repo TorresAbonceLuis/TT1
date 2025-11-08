@@ -1,11 +1,12 @@
 [build]
 builder = "NIXPACKS"
-# Se eliminan baseDirectory y buildCommand
-# Nixpacks lo detectará automáticamente en la raíz.
+# Se elimina baseDirectory ya que el código está en la raíz.
+# Se elimina buildCommand para usar la detección automática de Nixpacks.
 
 [deploy]
-# Se elimina el 'cd Backend &&' porque el código está en la raíz.
-startCommand = "python3 -m uvicorn main:app --host 0.0.0.0 --port $PORT"
+# 1. CLAVE: Usamos el módulo de Python para ejecutar Uvicorn.
+# 2. Se elimina el 'cd Backend &&' ya que estamos en la raíz.
+startCommand = "python3 -m uvicorn main:app --host 0.0.0.0 --port $PORT" 
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
