@@ -1,16 +1,17 @@
 [build]
 builder = "NIXPACKS"
-# 1. CLAVE: Le decimos a Nixpacks que la raíz del proyecto es la carpeta 'Backend'.
-# Esto hará que Nixpacks encuentre tu 'requeriment.txt' y 'main.py' allí.
+# 1. CLAVE: Mantenemos la baseDirectory para que el build se ejecute dentro de 'Backend'.
 baseDirectory = "Backend" 
+# 2. CLAVE: Forzamos la instalación usando el binario python3.9.
+# Como ya estamos en la baseDirectory "Backend", la ruta a requeriment.txt es directa.
+buildCommand = "python3.9 -m pip install -r requeriment.txt" 
 
 [deploy]
-# 2. CLAVE: El startCommand ya NO necesita 'cd Backend' porque la baseDirectory lo maneja.
-# Ejecutamos uvicorn directamente.
+# 3. CLAVE: Mantenemos el startCommand simple, ya que la baseDirectory lo maneja.
 startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 [nixpacks]
-# 3. CLAVE: Especificamos la versión de Python que debe usarse.
+# 4. CLAVE: Especificamos la versión para que 'python3.9' esté disponible.
 nixpkgs = ["python39"]
