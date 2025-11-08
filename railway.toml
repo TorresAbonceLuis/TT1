@@ -1,15 +1,16 @@
 [build]
 builder = "NIXPACKS"
-# ¡NUEVA LÍNEA CLAVE! Indica a Nixpacks que la aplicación está en esta subcarpeta.
-baseDirectory = "Backend"
+# 1. CLAVE: Le decimos a Nixpacks que la raíz del proyecto es la carpeta 'Backend'.
+# Esto hará que Nixpacks encuentre tu 'requeriment.txt' y 'main.py' allí.
+baseDirectory = "Backend" 
 
 [deploy]
-# El startCommand ya NO necesita el 'cd Backend' porque la baseDirectory ya apunta allí.
-# ASUMIMOS que tu 'main.py' está directamente dentro de 'Backend'.
+# 2. CLAVE: El startCommand ya NO necesita 'cd Backend' porque la baseDirectory lo maneja.
+# Ejecutamos uvicorn directamente.
 startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 [nixpacks]
-# Forzamos la versión de Python.
+# 3. CLAVE: Especificamos la versión de Python que debe usarse.
 nixpkgs = ["python39"]
