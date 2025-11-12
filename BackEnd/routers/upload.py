@@ -1,12 +1,11 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from services.transcription import transcribe_piano_audio
 from services.sheet_music import generate_sheet_music_pdf
 from utils.file_handling import save_uploaded_file, cleanup_files
 import os
 import json
 import asyncio
-from typing import AsyncGenerator
 import uuid
 
 router = APIRouter(tags=["Piano Transcription"])
@@ -75,6 +74,7 @@ async def run_transcription_task(task_id: str):
     try:
         # Actualizar estado
         task_data["status"] = "processing"
+        task_data["message"] = "Procesando transcripción..."
         
         # Definir rutas de salida
         output_dir = "temp_uploads"
@@ -82,22 +82,11 @@ async def run_transcription_task(task_id: str):
         midi_path = os.path.join(output_dir, f"{base_name}_{task_id}.mid")
         pdf_path = os.path.join(output_dir, f"{base_name}_{task_id}_partitura.pdf")
         
-        # Callback para actualizar progreso
-        def progress_callback(progress: int, message: str):
-            task_data["progress"] = progress
-            task_data["message"] = message
-        
         # 1. Transcribir audio a MIDI
-        transcription_result = transcribe_piano_audio(
-            audio_path,
-            midi_path,
-            progress_callback
-        )
-        
+        transcription_result = transcribe_piano_audio(audio_path, midi_path)
         task_data["midi_path"] = midi_path
         
         # 2. Generar partitura PDF
-        task_data["progress"] = 95
         task_data["message"] = "Generando partitura en PDF..."
         
         try:
@@ -180,51 +169,6 @@ async def get_transcription_status(task_id: str):
         "has_pdf": task_data.get("pdf_path") is not None,
         "transcription_info": task_data.get("transcription_info")
     })
-
-
-@router.get("/transcribe/stream/{task_id}")
-async def stream_transcription_progress(task_id: str):
-    """
-    Stream SSE (Server-Sent Events) para obtener progreso en tiempo real.
-    """
-    if task_id not in transcription_status:
-        raise HTTPException(status_code=404, detail="Tarea no encontrada")
-    
-    async def event_generator() -> AsyncGenerator[str, None]:
-        last_progress = -1
-        
-        while True:
-            task_data = transcription_status.get(task_id)
-            
-            if not task_data:
-                break
-            
-            # Enviar actualización si el progreso cambió
-            if task_data["progress"] != last_progress:
-                last_progress = task_data["progress"]
-                
-                event_data = {
-                    "progress": task_data["progress"],
-                    "message": task_data["message"],
-                    "status": task_data["status"]
-                }
-                
-                yield f"data: {json.dumps(event_data)}\n\n"
-            
-            # Si la tarea terminó (éxito o error), cerrar stream
-            if task_data["status"] in ["completed", "failed"]:
-                break
-            
-            await asyncio.sleep(0.5)  # Actualizar cada 500ms
-    
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-        }
-    )
 
 
 @router.get("/transcribe/download/midi/{task_id}")
