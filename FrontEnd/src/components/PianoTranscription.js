@@ -98,19 +98,6 @@ const PianoTranscription = () => {
     }, 2000); // Polling cada 2 segundos
   };
 
-  // Obtener información final
-  const fetchFinalStatus = async (taskId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/transcribe/status/${taskId}`);
-      const data = await response.json();
-      
-      setTranscriptionInfo(data.transcription_info);
-      setHasPdf(data.has_pdf);
-    } catch (err) {
-      console.error('Error al obtener estado final:', err);
-    }
-  };
-
   // Descargar PDF
   const downloadPdf = () => {
     if (taskId) {
