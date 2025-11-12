@@ -2,29 +2,18 @@
 //
 // Componente React para transcripción de piano con barra de progreso en tiempo real
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 
 const PianoTranscription = () => {
   const [file, setFile] = useState(null);
   const [taskId, setTaskId] = useState(null);
   const [status, setStatus] = useState('idle'); // idle, uploading, processing, completed, error
-  const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState('');
   const [error, setError] = useState(null);
   const [transcriptionInfo, setTranscriptionInfo] = useState(null);
   const [hasPdf, setHasPdf] = useState(false);
   
-  const eventSourceRef = useRef(null);
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://pt-api.whitewater-3f1ca299.centralus.azurecontainerapps.io/api/v1';
-
-  // Limpiar EventSource al desmontar
-  useEffect(() => {
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-    };
-  }, []);
 
   // Manejar selección de archivo
   const handleFileChange = (e) => {
@@ -51,7 +40,6 @@ const PianoTranscription = () => {
     }
 
     setStatus('uploading');
-    setProgress(0);
     setMessage('Subiendo archivo...');
     setError(null);
 
@@ -73,10 +61,10 @@ const PianoTranscription = () => {
       const data = await response.json();
       setTaskId(data.task_id);
       setStatus('processing');
-      setMessage('Transcripción iniciada...');
+      setMessage('Transcripción en proceso...');
 
-      // 2. Conectar a SSE para recibir progreso en tiempo real
-      connectToProgressStream(data.task_id);
+      // 2. Iniciar polling para verificar el estado
+      startPolling(data.task_id);
 
     } catch (err) {
       setStatus('error');
@@ -85,47 +73,13 @@ const PianoTranscription = () => {
     }
   };
 
-  // Conectar a Server-Sent Events para progreso en tiempo real
-  const connectToProgressStream = (taskId) => {
-    const eventSource = new EventSource(`${API_BASE_URL}/transcribe/stream/${taskId}`);
-    eventSourceRef.current = eventSource;
-
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      
-      setProgress(data.progress);
-      setMessage(data.message);
-
-      if (data.status === 'completed') {
-        setStatus('completed');
-        eventSource.close();
-        
-        // Consultar info final
-        fetchFinalStatus(taskId);
-      } else if (data.status === 'failed') {
-        setStatus('error');
-        setError(data.message);
-        eventSource.close();
-      }
-    };
-
-    eventSource.onerror = () => {
-      console.error('Error en SSE, cambiando a polling...');
-      eventSource.close();
-      
-      // Fallback a polling si SSE falla
-      startPolling(taskId);
-    };
-  };
-
-  // Polling como fallback
+  // Polling para verificar el estado
   const startPolling = (taskId) => {
     const interval = setInterval(async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/transcribe/status/${taskId}`);
         const data = await response.json();
 
-        setProgress(data.progress);
         setMessage(data.message);
         setHasPdf(data.has_pdf);
 
@@ -141,7 +95,7 @@ const PianoTranscription = () => {
       } catch (err) {
         console.error('Error en polling:', err);
       }
-    }, 1000); // Polling cada 1 segundo
+    }, 2000); // Polling cada 2 segundos
   };
 
   // Obtener información final
@@ -169,15 +123,10 @@ const PianoTranscription = () => {
     setFile(null);
     setTaskId(null);
     setStatus('idle');
-    setProgress(0);
     setMessage('');
     setError(null);
     setTranscriptionInfo(null);
     setHasPdf(false);
-    
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
   };
 
   return (
@@ -237,35 +186,23 @@ const PianoTranscription = () => {
         </div>
       )}
 
-      {/* Barra de progreso */}
+      {/* Estado de procesamiento */}
       {(status === 'uploading' || status === 'processing') && (
         <div className="space-y-4">
-          <div className="relative pt-1">
-            <div className="flex mb-2 items-center justify-between">
-              <div>
-                <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-yellow-900 bg-yellow-500">
-                  {status === 'uploading' ? 'Subiendo' : 'Procesando'}
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="text-xs font-semibold inline-block text-yellow-400">
-                  {progress}%
-                </span>
-              </div>
+          <div className="bg-yellow-900/30 border border-yellow-500 rounded-lg p-6">
+            <div className="flex items-center justify-center mb-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
             </div>
-            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-700">
-              <div
-                style={{ width: `${progress}%` }}
-                className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-yellow-500 transition-all duration-300"
-              />
-            </div>
-          </div>
-
-          <p className="text-sm text-gray-300 text-center">{message}</p>
-
-          {/* Animación de carga */}
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+            
+            <p className="text-center text-yellow-300 font-semibold text-lg mb-2">
+              {status === 'uploading' ? 'Subiendo archivo...' : 'Procesando transcripción...'}
+            </p>
+            
+            <p className="text-sm text-gray-300 text-center">{message}</p>
+            
+            <p className="text-xs text-gray-400 text-center mt-4">
+              Este proceso puede tardar varios minutos dependiendo de la duración del audio
+            </p>
           </div>
         </div>
       )}

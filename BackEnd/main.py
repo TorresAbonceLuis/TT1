@@ -104,7 +104,6 @@ async def root():
         "endpoints": {
             "transcribe": "/api/v1/transcribe/",
             "status": "/api/v1/transcribe/status/{task_id}",
-            "stream": "/api/v1/transcribe/stream/{task_id}",
             "download_midi": "/api/v1/transcribe/download/midi/{task_id}",
             "download_pdf": "/api/v1/transcribe/download/pdf/{task_id}"
         }
