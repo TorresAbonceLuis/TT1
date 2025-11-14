@@ -9,10 +9,6 @@ Recursos:
 - Registry: ptacr635892
 - App: pt-api
 
-URL: https://
-
-El modelo está incluido en la imagen Docker (14MB).
-
 Comandos útiles:
 ----------------
 # Ver logs

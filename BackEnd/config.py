@@ -20,10 +20,6 @@ class Settings(BaseSettings):
     HOP_LENGTH: int = 512
     N_MELS: int = 128
     
-    # Azure Storage (opcional para archivos persistentes)
-    AZURE_STORAGE_CONNECTION_STRING: str = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "")
-    AZURE_STORAGE_CONTAINER: str = os.getenv("AZURE_STORAGE_CONTAINER", "models")
-    
     class Config:
         env_file = ".env"
 
