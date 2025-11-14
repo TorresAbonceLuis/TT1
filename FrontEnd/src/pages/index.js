@@ -28,7 +28,7 @@ export default function Home() {
               
               {/* Subtítulo */}
               <p className="text-base md:text-lg text-blue-200 font-light max-w-2xl mx-auto">
-                Convierte tus interpretaciones de piano a partituras con nuestra herramienta inteligente
+                Convierte tus interpretaciones de piano a partituras
               </p>
             </div>
           </header>
