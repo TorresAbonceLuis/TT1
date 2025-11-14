@@ -119,7 +119,7 @@ const PianoTranscription = () => {
   return (
     <div className="max-w-2xl mx-auto p-8 bg-gray-800 rounded-xl shadow-2xl border border-gray-700">
       <h2 className="text-3xl font-bold text-center mb-6 text-white">
-        🎹 Transcripción Automática de Piano
+        Transcripción Automática de Piano
       </h2>
 
       {/* Selector de archivo */}
