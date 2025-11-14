@@ -14,7 +14,6 @@ export default function Home() {
         <header className="pt-16 pb-12 px-4 text-center">
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center justify-center text-4xl md:text-5xl font-bold mb-6 text-white">
-              <span className="mr-3">�</span>
               <h1>Audio a Notación</h1>
             </div>
             
@@ -24,7 +23,7 @@ export default function Home() {
             
             <div className="bg-yellow-900/30 border border-yellow-500 rounded-lg p-6 max-w-2xl mx-auto">
               <p className="text-gray-200 text-lg">
-                <strong className="text-yellow-400">⚠️ Importante:</strong> Deberá subir <strong>única y exclusivamente</strong> archivos con interpretaciones de piano en <strong>formato WAV</strong>.
+                <strong className="text-yellow-400">Importante:</strong> Deberá subir <strong>única y exclusivamente</strong> archivos con interpretaciones de piano en <strong>formato WAV</strong>.
               </p>
             </div>
           </div>
