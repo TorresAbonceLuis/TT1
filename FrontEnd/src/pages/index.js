@@ -10,33 +10,31 @@ export default function Home() {
         <meta name="description" content="Convierte tus interpretaciones de piano a partituras" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative">
+      <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden flex items-center justify-center">
         {/* Notas musicales flotantes en el fondo */}
         <FloatingNotes />
         
         {/* Contenido principal con z-index mayor */}
-        <div className="relative z-10">
+        <div className="relative z-10 w-full max-w-6xl px-4">
           {/* Header con descripción */}
-          <header className="pt-20 pb-16 px-4 text-center">
-          <div className="max-w-4xl mx-auto">
-            {/* Título con icono musical */}
-            <div className="flex items-center justify-center mb-4">
-              <span className="text-5xl md:text-6xl mr-3">🎵</span>
-              <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
-                Audio a Notación
-              </h1>
-              <span className="text-3xl md:text-4xl ml-2 text-cyan-400">✨</span>
+          <header className="text-center mb-8">
+            <div className="max-w-4xl mx-auto">
+              {/* Título con icono musical */}
+              <div className="flex items-center justify-center mb-3">
+                <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
+                  Audio a Notación
+                </h1>
+              </div>
+              
+              {/* Subtítulo */}
+              <p className="text-base md:text-lg text-blue-200 font-light max-w-2xl mx-auto">
+                Convierte tus interpretaciones de piano a partituras con nuestra herramienta inteligente
+              </p>
             </div>
-            
-            {/* Subtítulo */}
-            <p className="text-lg md:text-xl text-blue-200 mb-12 font-light max-w-2xl mx-auto">
-              Convierte tus interpretaciones de piano a partituras con nuestra herramienta inteligente
-            </p>
-          </div>
-        </header>
+          </header>
 
           {/* Componente de transcripción */}
-          <main className="container mx-auto px-4 pb-20">
+          <main>
             <PianoTranscription />
           </main>
         </div>
