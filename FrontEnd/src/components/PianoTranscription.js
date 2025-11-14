@@ -117,169 +117,222 @@ const PianoTranscription = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-8 bg-gray-800 rounded-xl shadow-2xl border border-gray-700">
-      <h2 className="text-3xl font-bold text-center mb-6 text-white">
-        Transcripción Automática de Piano
-      </h2>
+    <div className="max-w-3xl mx-auto">
+      {/* Card principal con diseño mejorado */}
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-3xl shadow-2xl border border-slate-700/50 overflow-hidden">
+        {/* Header del card */}
+        <div className="bg-gradient-to-r from-blue-900/50 to-slate-800/50 px-8 py-6 border-b border-slate-700/50">
+          <div className="flex items-center justify-center space-x-3">
+            <span className="text-3xl">🎹</span>
+            <h2 className="text-2xl md:text-3xl font-bold text-white">
+              Transcripción Automática de Piano
+            </h2>
+          </div>
+        </div>
 
-      {/* Selector de archivo */}
-      {status === 'idle' && (
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-yellow-500 transition-colors bg-gray-700/30">
-            <input
-              type="file"
-              accept=".wav"
-              onChange={handleFileChange}
-              className="hidden"
-              id="audio-upload"
-            />
-            <label
-              htmlFor="audio-upload"
-              className="cursor-pointer block"
-            >
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                stroke="currentColor"
-                fill="none"
-                viewBox="0 0 48 48"
-              >
-                <path
-                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+        {/* Contenido principal */}
+        <div className="p-8 md:p-10">
+          {/* Selector de archivo */}
+          {status === 'idle' && (
+            <div className="space-y-6">
+              {/* Área de carga con ilustración de piano */}
+              <div className="relative bg-slate-900/50 border-2 border-dashed border-cyan-500/50 rounded-2xl p-12 text-center hover:border-cyan-400 hover:bg-slate-900/70 transition-all duration-300">
+                <input
+                  type="file"
+                  accept=".wav"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="audio-upload"
                 />
-              </svg>
-              <span className="mt-2 block text-sm font-medium text-white">
-                {file ? file.name : 'Selecciona un archivo de audio WAV'}
-              </span>
-              <span className="mt-1 block text-xs text-gray-400">
-                Solo archivos WAV
-              </span>
-            </label>
-          </div>
+                <label htmlFor="audio-upload" className="cursor-pointer block">
+                  {/* Ilustración de piano con ondas */}
+                  <div className="mb-6 flex justify-center">
+                    <div className="relative">
+                      {/* Ondas de sonido animadas */}
+                      <div className="absolute -left-12 top-1/2 transform -translate-y-1/2">
+                        <div className="flex space-x-1">
+                          <div className="w-1 h-8 bg-cyan-400 rounded-full animate-pulse"></div>
+                          <div className="w-1 h-12 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.1s'}}></div>
+                          <div className="w-1 h-6 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                        </div>
+                      </div>
+                      
+                      {/* Teclas de piano */}
+                      <div className="flex space-x-1.5">
+                        <div className="w-12 h-32 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-12 h-32 bg-gradient-to-b from-slate-600 to-slate-900 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-12 h-32 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-12 h-32 bg-gradient-to-b from-slate-600 to-slate-900 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-12 h-32 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-12 h-32 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-12 h-32 bg-gradient-to-b from-slate-600 to-slate-900 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                      </div>
 
-          <button
-            onClick={startTranscription}
-            disabled={!file}
-            className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
-              file
-                ? 'bg-yellow-500 hover:bg-yellow-400 text-gray-900'
-                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            Iniciar Transcripción
-          </button>
-        </div>
-      )}
+                      {/* Ondas de sonido derecha */}
+                      <div className="absolute -right-12 top-1/2 transform -translate-y-1/2">
+                        <div className="flex space-x-1">
+                          <div className="w-1 h-6 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
+                          <div className="w-1 h-12 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                          <div className="w-1 h-8 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-      {/* Estado de procesamiento */}
-      {(status === 'uploading' || status === 'processing') && (
-        <div className="space-y-4">
-          <div className="bg-yellow-900/30 border border-yellow-500 rounded-lg p-6">
-            <div className="flex items-center justify-center mb-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
-            </div>
-            
-            <p className="text-center text-yellow-300 font-semibold text-lg mb-2">
-              {status === 'uploading' ? 'Subiendo archivo...' : 'Procesando transcripción...'}
-            </p>
-            
-            <p className="text-sm text-gray-300 text-center">{message}</p>
-            
-            <p className="text-xs text-gray-400 text-center mt-4">
-              Este proceso puede tardar varios minutos dependiendo de la duración del audio
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Resultado completado */}
-      {status === 'completed' && (
-        <div className="space-y-4">
-          <div className="bg-green-900/30 border border-green-500 rounded-lg p-4">
-            <div className="flex items-center">
-              <svg
-                className="h-6 w-6 text-green-400 mr-3"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path d="M5 13l4 4L19 7"></path>
-              </svg>
-              <p className="text-green-300 font-semibold">
-                ¡Transcripción completada exitosamente!
-              </p>
-            </div>
-
-            {transcriptionInfo && (
-              <div className="mt-3 text-sm text-green-400 space-y-1">
-                <p>⏱️ Duración: {transcriptionInfo.duration_seconds.toFixed(2)} segundos</p>
-                <p>🎵 Notas detectadas: {transcriptionInfo.total_notes}</p>
-                <p>📊 Frames procesados: {transcriptionInfo.total_frames}</p>
+                  <p className="text-white text-lg font-medium mb-2">
+                    {file ? `📁 ${file.name}` : 'Haz clic para seleccionar'}
+                  </p>
+                  <p className="text-blue-300 text-sm">
+                    Solo archivos WAV
+                  </p>
+                </label>
               </div>
-            )}
-          </div>
 
-          <button
-            onClick={downloadPdf}
-            disabled={!hasPdf}
-            className={`w-full py-4 px-6 rounded-lg font-bold text-lg transition-colors ${
-              hasPdf
-                ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg'
-                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            📄 Descargar Partitura
-          </button>
+              {/* Mensaje de advertencia estilo la imagen */}
+              <div className="bg-blue-900/30 border border-blue-500/50 rounded-xl p-4 flex items-start space-x-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-blue-200">
+                    <strong className="font-semibold">Aceptamos: </strong>
+                    Sólo archivos de interpretación de piano en formato WAV.
+                  </p>
+                </div>
+              </div>
 
-          {!hasPdf && (
-            <p className="text-xs text-gray-400 text-center">
-              * La partitura PDF puede no estar disponible si no está instalado MuseScore en el servidor
-            </p>
+              {/* Botón principal estilo cyan */}
+              <button
+                onClick={startTranscription}
+                disabled={!file}
+                className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform ${
+                  file
+                    ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-900 shadow-lg shadow-cyan-500/50 hover:shadow-cyan-400/50 hover:scale-[1.02]'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                Transcribir Ahora
+              </button>
+            </div>
           )}
 
-          <button
-            onClick={reset}
-            className="w-full py-2 px-4 rounded-lg font-semibold text-gray-900 bg-gray-300 hover:bg-gray-200 transition-colors"
-          >
-            Nueva Transcripción
-          </button>
-        </div>
-      )}
-
-      {/* Error */}
-      {status === 'error' && (
-        <div className="space-y-4">
-          <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
-            <div className="flex items-center">
-              <svg
-                className="h-6 w-6 text-red-400 mr-3"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-              <p className="text-red-300 font-semibold">Error en la transcripción</p>
+          {/* Estado de procesamiento */}
+          {(status === 'uploading' || status === 'processing') && (
+            <div className="space-y-6">
+              <div className="bg-blue-900/30 border border-cyan-500/50 rounded-2xl p-8">
+                <div className="flex items-center justify-center mb-6">
+                  <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-cyan-500"></div>
+                </div>
+                
+                <p className="text-center text-white font-bold text-xl mb-3">
+                  {status === 'uploading' ? '📤 Subiendo archivo...' : '🎼 Procesando transcripción...'}
+                </p>
+                
+                <p className="text-base text-blue-200 text-center">{message}</p>
+                
+                <p className="text-sm text-blue-300/70 text-center mt-6">
+                  Este proceso puede tardar varios minutos dependiendo de la duración del audio
+                </p>
+              </div>
             </div>
-            <p className="mt-2 text-sm text-red-400">{error}</p>
-          </div>
+          )}
 
-          <button
-            onClick={reset}
-            className="w-full py-2 px-4 rounded-lg font-semibold text-gray-900 bg-yellow-500 hover:bg-yellow-400 transition-colors"
-          >
-            Intentar de nuevo
-          </button>
+          {/* Resultado completado */}
+          {status === 'completed' && (
+            <div className="space-y-6">
+              <div className="bg-green-900/20 border border-green-500/50 rounded-2xl p-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+                    <svg
+                      className="h-8 w-8 text-green-400"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                </div>
+                
+                <p className="text-green-300 font-bold text-xl text-center mb-4">
+                  ¡Transcripción completada exitosamente!
+                </p>
+
+                {transcriptionInfo && (
+                  <div className="mt-4 space-y-2 bg-slate-900/50 rounded-xl p-4">
+                    <p className="text-base text-blue-200">⏱️ Duración: <span className="font-semibold">{transcriptionInfo.duration_seconds.toFixed(2)}s</span></p>
+                    <p className="text-base text-blue-200">🎵 Notas detectadas: <span className="font-semibold">{transcriptionInfo.total_notes}</span></p>
+                    <p className="text-base text-blue-200">📊 Frames procesados: <span className="font-semibold">{transcriptionInfo.total_frames}</span></p>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={downloadPdf}
+                disabled={!hasPdf}
+                className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform ${
+                  hasPdf
+                    ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-900 shadow-lg shadow-cyan-500/50 hover:shadow-cyan-400/50 hover:scale-[1.02]'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                📄 Descargar Partitura PDF
+              </button>
+
+              {!hasPdf && (
+                <p className="text-xs text-blue-300/70 text-center">
+                  * La partitura PDF puede no estar disponible si no está instalado MuseScore en el servidor
+                </p>
+              )}
+
+              <button
+                onClick={reset}
+                className="w-full py-3 px-4 rounded-xl font-semibold text-white bg-slate-700 hover:bg-slate-600 transition-colors border border-slate-600"
+              >
+                🔄 Nueva Transcripción
+              </button>
+            </div>
+          )}
+
+          {/* Error */}
+          {status === 'error' && (
+            <div className="space-y-6">
+              <div className="bg-red-900/20 border border-red-500/50 rounded-2xl p-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+                    <svg
+                      className="h-8 w-8 text-red-400"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </div>
+                </div>
+                
+                <p className="text-red-300 font-bold text-xl text-center mb-3">Error en la transcripción</p>
+                <p className="text-base text-red-200 text-center bg-slate-900/50 rounded-xl p-4">{error}</p>
+              </div>
+
+              <button
+                onClick={reset}
+                className="w-full py-4 px-6 rounded-xl font-bold text-lg bg-cyan-500 hover:bg-cyan-400 text-slate-900 transition-all duration-300 transform hover:scale-[1.02] shadow-lg shadow-cyan-500/50"
+              >
+                🔄 Intentar de Nuevo
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

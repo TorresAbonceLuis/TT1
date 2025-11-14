@@ -1,5 +1,6 @@
 import Head from 'next/head';
 import PianoTranscription from '../components/PianoTranscription';
+import FloatingNotes from '../components/FloatingNotes';
 
 export default function Home() {
   return (
@@ -9,30 +10,36 @@ export default function Home() {
         <meta name="description" content="Convierte tus interpretaciones de piano a partituras" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-red-900">
-        {/* Header con descripción */}
-        <header className="pt-16 pb-12 px-4 text-center">
-          <div className="max-w-3xl mx-auto">
-            <div className="flex items-center justify-center text-4xl md:text-5xl font-bold mb-6 text-white">
-              <h1>Audio a Notación</h1>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative">
+        {/* Notas musicales flotantes en el fondo */}
+        <FloatingNotes />
+        
+        {/* Contenido principal con z-index mayor */}
+        <div className="relative z-10">
+          {/* Header con descripción */}
+          <header className="pt-20 pb-16 px-4 text-center">
+          <div className="max-w-4xl mx-auto">
+            {/* Título con icono musical */}
+            <div className="flex items-center justify-center mb-4">
+              <span className="text-5xl md:text-6xl mr-3">🎵</span>
+              <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
+                Audio a Notación
+              </h1>
+              <span className="text-3xl md:text-4xl ml-2 text-cyan-400">✨</span>
             </div>
             
-            <p className="text-xl md:text-2xl text-gray-200 mb-6 font-light">
-              Convierte tus interpretaciones de piano a partituras con nuestra herramienta
+            {/* Subtítulo */}
+            <p className="text-lg md:text-xl text-blue-200 mb-12 font-light max-w-2xl mx-auto">
+              Convierte tus interpretaciones de piano a partituras con nuestra herramienta inteligente
             </p>
-            
-            <div className="bg-yellow-900/30 border border-yellow-500 rounded-lg p-6 max-w-2xl mx-auto">
-              <p className="text-gray-200 text-lg">
-                <strong className="text-yellow-400">Importante:</strong> Deberá subir <strong>única y exclusivamente</strong> archivos con interpretaciones de piano en <strong>formato WAV</strong>.
-              </p>
-            </div>
           </div>
         </header>
 
-        {/* Componente de transcripción */}
-        <main className="container mx-auto px-4 pb-20">
-          <PianoTranscription />
-        </main>
+          {/* Componente de transcripción */}
+          <main className="container mx-auto px-4 pb-20">
+            <PianoTranscription />
+          </main>
+        </div>
       </div>
     </>
   );
