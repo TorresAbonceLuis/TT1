@@ -226,7 +226,7 @@ const PianoTranscription = () => {
                 </div>
                 
                 <p className="text-center text-white font-bold text-xl mb-3">
-                  {status === 'uploading' ? '📤 Subiendo archivo...' : '🎼 Procesando transcripción...'}
+                  {status === 'uploading' ? 'Subiendo archivo...' : 'Procesando transcripción...'}
                 </p>
                 
                 <p className="text-base text-blue-200 text-center">{message}</p>
@@ -264,9 +264,9 @@ const PianoTranscription = () => {
 
                 {transcriptionInfo && (
                   <div className="mt-4 space-y-2 bg-slate-900/50 rounded-xl p-4">
-                    <p className="text-base text-blue-200">⏱️ Duración: <span className="font-semibold">{transcriptionInfo.duration_seconds.toFixed(2)}s</span></p>
-                    <p className="text-base text-blue-200">🎵 Notas detectadas: <span className="font-semibold">{transcriptionInfo.total_notes}</span></p>
-                    <p className="text-base text-blue-200">📊 Frames procesados: <span className="font-semibold">{transcriptionInfo.total_frames}</span></p>
+                    <p className="text-base text-blue-200">⏱Duración: <span className="font-semibold">{transcriptionInfo.duration_seconds.toFixed(2)}s</span></p>
+                    <p className="text-base text-blue-200">Notas detectadas: <span className="font-semibold">{transcriptionInfo.total_notes}</span></p>
+                    <p className="text-base text-blue-200">Frames procesados: <span className="font-semibold">{transcriptionInfo.total_frames}</span></p>
                   </div>
                 )}
               </div>
@@ -280,7 +280,7 @@ const PianoTranscription = () => {
                     : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                 }`}
               >
-                📄 Descargar Partitura PDF
+                Descargar Partitura PDF
               </button>
 
               {!hasPdf && (
@@ -326,7 +326,7 @@ const PianoTranscription = () => {
                 onClick={reset}
                 className="w-full py-4 px-6 rounded-xl font-bold text-lg bg-cyan-500 hover:bg-cyan-400 text-slate-900 transition-all duration-300 transform hover:scale-[1.02] shadow-lg shadow-cyan-500/50"
               >
-                🔄 Intentar de Nuevo
+                Intentar de Nuevo
               </button>
             </div>
           )}
