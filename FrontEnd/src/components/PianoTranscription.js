@@ -10,7 +10,7 @@ const PianoTranscription = () => {
   const [status, setStatus] = useState('idle'); // idle, uploading, processing, completed, error
   const [message, setMessage] = useState('');
   const [error, setError] = useState(null);
-  const [transcriptionInfo, setTranscriptionInfo] = useState(null);
+  const [setTranscriptionInfo] = useState(null);
   const [hasPdf, setHasPdf] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   
