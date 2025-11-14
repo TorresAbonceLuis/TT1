@@ -12,6 +12,7 @@ const PianoTranscription = () => {
   const [error, setError] = useState(null);
   const [transcriptionInfo, setTranscriptionInfo] = useState(null);
   const [hasPdf, setHasPdf] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://pt-api.whitewater-3f1ca299.centralus.azurecontainerapps.io/api/v1';
 
@@ -36,6 +37,11 @@ const PianoTranscription = () => {
   const startTranscription = async () => {
     if (!file) {
       setError('Por favor selecciona un archivo de audio.');
+      return;
+    }
+
+    if (!acceptTerms) {
+      setError('Debes aceptar los términos para continuar.');
       return;
     }
 
@@ -114,6 +120,7 @@ const PianoTranscription = () => {
     setError(null);
     setTranscriptionInfo(null);
     setHasPdf(false);
+    setAcceptTerms(false);
   };
 
   return (
@@ -187,27 +194,31 @@ const PianoTranscription = () => {
                 </label>
               </div>
 
-              {/* Mensaje de advertencia estilo la imagen */}
-              <div className="bg-blue-900/30 border border-blue-500/50 rounded-xl p-3 flex items-start space-x-2">
-                <div className="flex-shrink-0 mt-0.5">
-                  <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-blue-200">
-                    <strong className="font-semibold">Aceptamos: </strong>
-                    Sólo archivos de interpretación de piano en formato WAV.
-                  </p>
-                </div>
+              {/* Checkbox de términos y condiciones */}
+              <div className="bg-blue-900/30 border border-blue-500/50 rounded-xl p-4">
+                <label className="flex items-start space-x-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    className="mt-1 w-5 h-5 rounded border-2 border-cyan-400 bg-slate-800 text-cyan-500 focus:ring-2 focus:ring-cyan-400 focus:ring-offset-0 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm text-blue-200 leading-relaxed">
+                      Confirmo que mi archivo es un audio en <strong className="text-cyan-300">formato WAV</strong> que contiene <strong className="text-cyan-300">únicamente una interpretación de piano</strong> (sin otros instrumentos o voces), 
+                      con <strong className="text-cyan-300">audio limpio y mínimo ruido de fondo</strong>, 
+                      para garantizar la mejor calidad en la transcripción automática.
+                    </p>
+                  </div>
+                </label>
               </div>
 
               {/* Botón principal estilo cyan */}
               <button
                 onClick={startTranscription}
-                disabled={!file}
+                disabled={!file || !acceptTerms}
                 className={`w-full py-3 px-6 rounded-xl font-bold text-base transition-all duration-300 transform ${
-                  file
+                  file && acceptTerms
                     ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-900 shadow-lg shadow-cyan-500/50 hover:shadow-cyan-400/50 hover:scale-[1.02]'
                     : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                 }`}
