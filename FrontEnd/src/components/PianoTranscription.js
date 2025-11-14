@@ -117,26 +117,25 @@ const PianoTranscription = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* Card principal con diseño mejorado */}
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-3xl shadow-2xl border border-slate-700/50 overflow-hidden">
         {/* Header del card */}
-        <div className="bg-gradient-to-r from-blue-900/50 to-slate-800/50 px-8 py-6 border-b border-slate-700/50">
-          <div className="flex items-center justify-center space-x-3">
-            <span className="text-3xl">🎹</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-white">
+        <div className="bg-gradient-to-r from-blue-900/50 to-slate-800/50 px-6 py-4 border-b border-slate-700/50">
+          <div className="flex items-center justify-center space-x-2">
+            <h2 className="text-xl md:text-2xl font-bold text-white">
               Transcripción Automática de Piano
             </h2>
           </div>
         </div>
 
         {/* Contenido principal */}
-        <div className="p-8 md:p-10">
+        <div className="p-6 md:p-8">
           {/* Selector de archivo */}
           {status === 'idle' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Área de carga con ilustración de piano */}
-              <div className="relative bg-slate-900/50 border-2 border-dashed border-cyan-500/50 rounded-2xl p-12 text-center hover:border-cyan-400 hover:bg-slate-900/70 transition-all duration-300">
+              <div className="relative bg-slate-900/50 border-2 border-dashed border-cyan-500/50 rounded-2xl p-8 text-center hover:border-cyan-400 hover:bg-slate-900/70 transition-all duration-300">
                 <input
                   type="file"
                   accept=".wav"
@@ -146,40 +145,40 @@ const PianoTranscription = () => {
                 />
                 <label htmlFor="audio-upload" className="cursor-pointer block">
                   {/* Ilustración de piano con ondas */}
-                  <div className="mb-6 flex justify-center">
+                  <div className="mb-4 flex justify-center">
                     <div className="relative">
                       {/* Ondas de sonido animadas */}
-                      <div className="absolute -left-12 top-1/2 transform -translate-y-1/2">
+                      <div className="absolute -left-10 top-1/2 transform -translate-y-1/2">
                         <div className="flex space-x-1">
-                          <div className="w-1 h-8 bg-cyan-400 rounded-full animate-pulse"></div>
-                          <div className="w-1 h-12 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.1s'}}></div>
-                          <div className="w-1 h-6 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                          <div className="w-1 h-6 bg-cyan-400 rounded-full animate-pulse"></div>
+                          <div className="w-1 h-10 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.1s'}}></div>
+                          <div className="w-1 h-5 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
                         </div>
                       </div>
                       
                       {/* Teclas de piano */}
                       <div className="flex space-x-1.5">
-                        <div className="w-12 h-32 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
-                        <div className="w-12 h-32 bg-gradient-to-b from-slate-600 to-slate-900 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
-                        <div className="w-12 h-32 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
-                        <div className="w-12 h-32 bg-gradient-to-b from-slate-600 to-slate-900 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
-                        <div className="w-12 h-32 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
-                        <div className="w-12 h-32 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
-                        <div className="w-12 h-32 bg-gradient-to-b from-slate-600 to-slate-900 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-10 h-24 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-10 h-24 bg-gradient-to-b from-slate-600 to-slate-900 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-10 h-24 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-10 h-24 bg-gradient-to-b from-slate-600 to-slate-900 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-10 h-24 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-10 h-24 bg-gradient-to-b from-white to-gray-50 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
+                        <div className="w-10 h-24 bg-gradient-to-b from-slate-600 to-slate-900 rounded-b-xl shadow-2xl border-2 border-cyan-400"></div>
                       </div>
 
                       {/* Ondas de sonido derecha */}
-                      <div className="absolute -right-12 top-1/2 transform -translate-y-1/2">
+                      <div className="absolute -right-10 top-1/2 transform -translate-y-1/2">
                         <div className="flex space-x-1">
-                          <div className="w-1 h-6 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
-                          <div className="w-1 h-12 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                          <div className="w-1 h-8 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+                          <div className="w-1 h-5 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
+                          <div className="w-1 h-10 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                          <div className="w-1 h-6 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <p className="text-white text-lg font-medium mb-2">
+                  <p className="text-white text-base font-medium mb-1">
                     {file ? `📁 ${file.name}` : 'Haz clic para seleccionar'}
                   </p>
                   <p className="text-blue-300 text-sm">
@@ -189,7 +188,7 @@ const PianoTranscription = () => {
               </div>
 
               {/* Mensaje de advertencia estilo la imagen */}
-              <div className="bg-blue-900/30 border border-blue-500/50 rounded-xl p-4 flex items-start space-x-3">
+              <div className="bg-blue-900/30 border border-blue-500/50 rounded-xl p-3 flex items-start space-x-2">
                 <div className="flex-shrink-0 mt-0.5">
                   <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
@@ -207,7 +206,7 @@ const PianoTranscription = () => {
               <button
                 onClick={startTranscription}
                 disabled={!file}
-                className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform ${
+                className={`w-full py-3 px-6 rounded-xl font-bold text-base transition-all duration-300 transform ${
                   file
                     ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-900 shadow-lg shadow-cyan-500/50 hover:shadow-cyan-400/50 hover:scale-[1.02]'
                     : 'bg-slate-700 text-slate-500 cursor-not-allowed'
