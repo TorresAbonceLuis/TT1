@@ -293,7 +293,7 @@ const PianoTranscription = () => {
                 onClick={reset}
                 className="w-full py-3 px-4 rounded-xl font-semibold text-white bg-slate-700 hover:bg-slate-600 transition-colors border border-slate-600"
               >
-                🔄 Nueva Transcripción
+                Nueva Transcripción
               </button>
             </div>
           )}
