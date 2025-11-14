@@ -261,14 +261,6 @@ const PianoTranscription = () => {
                 <p className="text-green-300 font-bold text-xl text-center mb-4">
                   ¡Transcripción completada exitosamente!
                 </p>
-
-                {transcriptionInfo && (
-                  <div className="mt-4 space-y-2 bg-slate-900/50 rounded-xl p-4">
-                    <p className="text-base text-blue-200">⏱Duración: <span className="font-semibold">{transcriptionInfo.duration_seconds.toFixed(2)}s</span></p>
-                    <p className="text-base text-blue-200">Notas detectadas: <span className="font-semibold">{transcriptionInfo.total_notes}</span></p>
-                    <p className="text-base text-blue-200">Frames procesados: <span className="font-semibold">{transcriptionInfo.total_frames}</span></p>
-                  </div>
-                )}
               </div>
 
               <button
