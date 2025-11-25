@@ -2,7 +2,7 @@
 //
 // Componente React para transcripción de piano con barra de progreso en tiempo real
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const PianoTranscription = () => {
   const [file, setFile] = useState(null);
@@ -10,11 +10,24 @@ const PianoTranscription = () => {
   const [status, setStatus] = useState('idle'); // idle, uploading, processing, completed, error
   const [message, setMessage] = useState('');
   const [error, setError] = useState(null);
-  const [setTranscriptionInfo] = useState(null);
+  const [transcriptionInfo, setTranscriptionInfo] = useState(null);
   const [hasPdf, setHasPdf] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   
+  // Referencia para el intervalo de polling
+  const pollingIntervalRef = useRef(null);
+  
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://pt-api.whitewater-3f1ca299.centralus.azurecontainerapps.io/api/v1';
+
+  // Limpiar intervalo cuando el componente se desmonte
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        console.log('🧹 Polling limpiado al desmontar componente');
+      }
+    };
+  }, []);
 
   // Manejar selección de archivo
   const handleFileChange = (e) => {
@@ -81,25 +94,47 @@ const PianoTranscription = () => {
 
   // Polling para verificar el estado
   const startPolling = (taskId) => {
-    const interval = setInterval(async () => {
+    // Limpiar cualquier polling anterior
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    pollingIntervalRef.current = setInterval(async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/transcribe/status/${taskId}`);
+        
+        if (!response.ok) {
+          throw new Error('Error al verificar el estado');
+        }
+        
         const data = await response.json();
 
         setMessage(data.message);
-        setHasPdf(data.has_pdf);
-
+        
         if (data.status === 'completed') {
           setStatus('completed');
           setTranscriptionInfo(data.transcription_info);
-          clearInterval(interval);
+          setHasPdf(data.has_pdf);
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+          console.log('✅ Transcripción completada - polling detenido');
         } else if (data.status === 'failed') {
           setStatus('error');
           setError(data.error);
-          clearInterval(interval);
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+          console.log('❌ Transcripción fallida - polling detenido');
+        } else {
+          // Actualizar estado de PDF solo si está en proceso
+          setHasPdf(data.has_pdf);
+          console.log(`⏳ Estado: ${data.status} - ${data.message}`);
         }
       } catch (err) {
         console.error('Error en polling:', err);
+        setStatus('error');
+        setError('Error al verificar el estado de la transcripción');
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
     }, 2000); // Polling cada 2 segundos
   };
@@ -113,6 +148,13 @@ const PianoTranscription = () => {
 
   // Reiniciar
   const reset = () => {
+    // Limpiar polling si existe
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+      console.log('🧹 Polling limpiado en reset');
+    }
+    
     setFile(null);
     setTaskId(null);
     setStatus('idle');
