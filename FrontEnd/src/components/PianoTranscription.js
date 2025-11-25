@@ -153,7 +153,7 @@ const PianoTranscription = () => {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
         }
-      }, 2000); // Polling cada 2 segundos
+      }, 6000); // Polling cada 6 segundos
     }, 1000); // Esperar 1 segundo antes de iniciar
   };
 
@@ -302,6 +302,15 @@ const PianoTranscription = () => {
                 </p>
                 
                 <p className="text-base text-blue-200 text-center">{message}</p>
+                
+                {/* Animación de puntos saltando */}
+                <div className="flex justify-center mt-4">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce"></div>
+                    <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                </div>
                 
                 <p className="text-sm text-blue-300/70 text-center mt-6">
                   Este proceso puede tardar varios minutos dependiendo de la duración del audio
