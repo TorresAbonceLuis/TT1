@@ -158,30 +158,11 @@ const PianoTranscription = () => {
   };
 
   // Descargar PDF
-  const downloadPdf = async () => {
-    if (!taskId) return;
-    
-    try {
-      // Verificar primero que el archivo esté disponible
-      const statusResponse = await fetch(`${API_BASE_URL}/transcribe/status/${taskId}`);
-      
-      if (!statusResponse.ok) {
-        setError('La partitura ya no está disponible. Los archivos se eliminan después de un tiempo.');
-        return;
-      }
-      
-      const statusData = await statusResponse.json();
-      
-      if (statusData.status !== 'completed' || !statusData.has_pdf) {
-        setError('La partitura no está lista aún. Por favor intenta de nuevo.');
-        return;
-      }
-      
-      // Si todo está bien, descargar
-      window.open(`${API_BASE_URL}/transcribe/download/pdf/${taskId}`, '_blank');
-    } catch (err) {
-      console.error('Error al descargar PDF:', err);
-      setError('Error al descargar la partitura. Intenta de nuevo.');
+  const downloadPdf = () => {
+    if (taskId) {
+      const downloadUrl = `${API_BASE_URL}/transcribe/download/pdf/${taskId}`;
+      console.log('Descargando PDF desde:', downloadUrl);
+      window.open(downloadUrl, '_blank');
     }
   };
 

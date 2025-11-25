@@ -49,7 +49,8 @@ async def start_transcription(file: UploadFile = File(...)):
             "pdf_path": None,
             "error": None,
             "midi_downloaded": False,
-            "pdf_downloaded": False
+            "pdf_downloaded": False,
+            "cleanup_scheduled": False
         }
         
         # Pequeño delay para asegurar que el estado se guarde
