@@ -98,49 +98,90 @@ const PianoTranscription = () => {
       clearInterval(pollingIntervalRef.current);
     }
 
-    pollingIntervalRef.current = setInterval(async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/transcribe/status/${taskId}`);
-        
-        if (!response.ok) {
-          throw new Error('Error al verificar el estado');
-        }
-        
-        const data = await response.json();
-
-        setMessage(data.message);
-        
-        if (data.status === 'completed') {
-          setStatus('completed');
-          setHasPdf(data.has_pdf);
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-          console.log('✅ Transcripción completada - polling detenido');
-        } else if (data.status === 'failed') {
+    let errorCount = 0;
+    const maxErrors = 3; // Máximo de errores consecutivos antes de abortar
+    
+    // Esperar 1 segundo antes de empezar el polling para dar tiempo al backend
+    setTimeout(() => {
+      pollingIntervalRef.current = setInterval(async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/transcribe/status/${taskId}`);
+          
+          // Si es 404, la tarea aún no está lista o fue limpiada
+          if (response.status === 404) {
+            errorCount++;
+            console.log(`⚠️ Tarea no encontrada (${errorCount}/${maxErrors})`);
+            
+            // Si hay demasiados errores 404 consecutivos, abortar
+            if (errorCount >= maxErrors) {
+              throw new Error('La tarea no se encontró después de varios intentos');
+            }
+            return; // Continuar polling
+          }
+          
+          if (!response.ok) {
+            throw new Error(`Error del servidor: ${response.status}`);
+          }
+          
+          // Resetear contador de errores si la petición fue exitosa
+          errorCount = 0;
+          
+          const data = await response.json();
+          setMessage(data.message);
+          
+          if (data.status === 'completed') {
+            setStatus('completed');
+            setHasPdf(data.has_pdf);
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+            console.log('✅ Transcripción completada - polling detenido');
+          } else if (data.status === 'failed') {
+            setStatus('error');
+            setError(data.error);
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+            console.log('❌ Transcripción fallida - polling detenido');
+          } else {
+            // Actualizar estado de PDF solo si está en proceso
+            setHasPdf(data.has_pdf);
+            console.log(`⏳ Estado: ${data.status} - ${data.message}`);
+          }
+        } catch (err) {
+          console.error('Error en polling:', err);
           setStatus('error');
-          setError(data.error);
+          setError(err.message || 'Error al verificar el estado de la transcripción');
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
-          console.log('❌ Transcripción fallida - polling detenido');
-        } else {
-          // Actualizar estado de PDF solo si está en proceso
-          setHasPdf(data.has_pdf);
-          console.log(`⏳ Estado: ${data.status} - ${data.message}`);
         }
-      } catch (err) {
-        console.error('Error en polling:', err);
-        setStatus('error');
-        setError('Error al verificar el estado de la transcripción');
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-    }, 2000); // Polling cada 2 segundos
+      }, 2000); // Polling cada 2 segundos
+    }, 1000); // Esperar 1 segundo antes de iniciar
   };
 
   // Descargar PDF
-  const downloadPdf = () => {
-    if (taskId) {
+  const downloadPdf = async () => {
+    if (!taskId) return;
+    
+    try {
+      // Verificar primero que el archivo esté disponible
+      const statusResponse = await fetch(`${API_BASE_URL}/transcribe/status/${taskId}`);
+      
+      if (!statusResponse.ok) {
+        setError('La partitura ya no está disponible. Los archivos se eliminan después de un tiempo.');
+        return;
+      }
+      
+      const statusData = await statusResponse.json();
+      
+      if (statusData.status !== 'completed' || !statusData.has_pdf) {
+        setError('La partitura no está lista aún. Por favor intenta de nuevo.');
+        return;
+      }
+      
+      // Si todo está bien, descargar
       window.open(`${API_BASE_URL}/transcribe/download/pdf/${taskId}`, '_blank');
+    } catch (err) {
+      console.error('Error al descargar PDF:', err);
+      setError('Error al descargar la partitura. Intenta de nuevo.');
     }
   };
 

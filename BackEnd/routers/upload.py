@@ -37,7 +37,8 @@ async def start_transcription(file: UploadFile = File(...)):
         # Generar ID único para esta transcripción
         task_id = str(uuid.uuid4())
         
-        # Inicializar estado
+        # IMPORTANTE: Inicializar estado ANTES de iniciar la tarea
+        # Esto previene race conditions donde el cliente hace polling antes de que se registre la tarea
         transcription_status[task_id] = {
             "status": "pending",
             "progress": 0,
@@ -46,8 +47,13 @@ async def start_transcription(file: UploadFile = File(...)):
             "filename": file.filename,
             "midi_path": None,
             "pdf_path": None,
-            "error": None
+            "error": None,
+            "midi_downloaded": False,
+            "pdf_downloaded": False
         }
+        
+        # Pequeño delay para asegurar que el estado se guarde
+        await asyncio.sleep(0.1)
         
         # Iniciar transcripción en background
         asyncio.create_task(run_transcription_task(task_id))
@@ -120,10 +126,11 @@ async def run_transcription_task(task_id: str):
             cleanup_files([audio_path])
 
 
-async def cleanup_task_files(task_id: str, delay: int = 5):
+async def cleanup_task_files(task_id: str, delay: int = 300):
     """
     Limpia los archivos asociados a una tarea después de un delay.
     Se ejecuta después de que el usuario descargue los archivos.
+    Por defecto espera 5 minutos para dar tiempo a múltiples descargas.
     """
     await asyncio.sleep(delay)
     
@@ -175,10 +182,10 @@ async def get_transcription_status(task_id: str):
 async def download_midi(task_id: str):
     """
     Descarga el archivo MIDI generado.
-    Marca el archivo para limpieza después de la descarga.
+    Los archivos se mantienen disponibles por 5 minutos después de completarse.
     """
     if task_id not in transcription_status:
-        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+        raise HTTPException(status_code=404, detail="Tarea no encontrada o archivos ya eliminados")
     
     task_data = transcription_status[task_id]
     
@@ -186,16 +193,18 @@ async def download_midi(task_id: str):
         raise HTTPException(status_code=400, detail="La transcripción aún no ha finalizado")
     
     if not task_data.get("midi_path") or not os.path.exists(task_data["midi_path"]):
-        raise HTTPException(status_code=404, detail="Archivo MIDI no encontrado")
+        raise HTTPException(status_code=404, detail="Archivo MIDI no encontrado o ya eliminado")
     
     filename = os.path.splitext(task_data["filename"])[0] + ".mid"
     
     # Marcar que el MIDI fue descargado
     task_data["midi_downloaded"] = True
     
-    # Programar limpieza si ambos archivos fueron descargados
-    if task_data.get("midi_downloaded") and task_data.get("pdf_downloaded"):
-        asyncio.create_task(cleanup_task_files(task_id, delay=5))
+    # Programar limpieza automática solo la primera vez que se descarga algo
+    if not task_data.get("cleanup_scheduled"):
+        task_data["cleanup_scheduled"] = True
+        asyncio.create_task(cleanup_task_files(task_id, delay=300))  # 5 minutos
+        print(f"⏰ Limpieza programada para tarea {task_id} en 5 minutos")
     
     return FileResponse(
         task_data["midi_path"],
@@ -208,10 +217,10 @@ async def download_midi(task_id: str):
 async def download_pdf_sheet(task_id: str):
     """
     Descarga la partitura en PDF.
-    Marca el archivo para limpieza después de la descarga.
+    Los archivos se mantienen disponibles por 5 minutos después de completarse.
     """
     if task_id not in transcription_status:
-        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+        raise HTTPException(status_code=404, detail="Tarea no encontrada o archivos ya eliminados")
     
     task_data = transcription_status[task_id]
     
@@ -219,16 +228,18 @@ async def download_pdf_sheet(task_id: str):
         raise HTTPException(status_code=400, detail="La transcripción aún no ha finalizado")
     
     if not task_data.get("pdf_path") or not os.path.exists(task_data["pdf_path"]):
-        raise HTTPException(status_code=404, detail="Partitura PDF no disponible")
+        raise HTTPException(status_code=404, detail="Partitura PDF no disponible o ya eliminada")
     
     filename = os.path.splitext(task_data["filename"])[0] + "_partitura.pdf"
     
     # Marcar que el PDF fue descargado
     task_data["pdf_downloaded"] = True
     
-    # Programar limpieza si ambos archivos fueron descargados
-    if task_data.get("midi_downloaded") and task_data.get("pdf_downloaded"):
-        asyncio.create_task(cleanup_task_files(task_id, delay=5))
+    # Programar limpieza automática solo la primera vez que se descarga algo
+    if not task_data.get("cleanup_scheduled"):
+        task_data["cleanup_scheduled"] = True
+        asyncio.create_task(cleanup_task_files(task_id, delay=300))  # 5 minutos
+        print(f"⏰ Limpieza programada para tarea {task_id} en 5 minutos")
     
     return FileResponse(
         task_data["pdf_path"],
