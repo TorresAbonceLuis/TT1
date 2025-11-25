@@ -10,7 +10,6 @@ const PianoTranscription = () => {
   const [status, setStatus] = useState('idle'); // idle, uploading, processing, completed, error
   const [message, setMessage] = useState('');
   const [error, setError] = useState(null);
-  const [transcriptionInfo, setTranscriptionInfo] = useState(null);
   const [hasPdf, setHasPdf] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   
@@ -113,7 +112,6 @@ const PianoTranscription = () => {
         
         if (data.status === 'completed') {
           setStatus('completed');
-          setTranscriptionInfo(data.transcription_info);
           setHasPdf(data.has_pdf);
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
@@ -160,7 +158,6 @@ const PianoTranscription = () => {
     setStatus('idle');
     setMessage('');
     setError(null);
-    setTranscriptionInfo(null);
     setHasPdf(false);
     setAcceptTerms(false);
   };
