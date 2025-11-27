@@ -12,21 +12,26 @@ const PianoTranscription = () => {
   const [error, setError] = useState(null);
   const [hasPdf, setHasPdf] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  
+          
   // Referencia para el intervalo de polling
-  const pollingIntervalRef = useRef(null);
+  const pollingTimeoutRef = useRef(null);
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://pt-api.whitewater-3f1ca299.centralus.azurecontainerapps.io/api/v1';
 
   // Limpiar intervalo cuando el componente se desmonte
   useEffect(() => {
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        console.log('🧹 Polling limpiado al desmontar componente');
-      }
+      clearPollingTimer();
+      console.log('🧹 Polling limpiado al desmontar componente');
     };
   }, []);
+
+  const clearPollingTimer = () => {
+    if (pollingTimeoutRef.current) {
+      clearTimeout(pollingTimeoutRef.current);
+      pollingTimeoutRef.current = null;
+    }
+  };
 
   // Manejar selección de archivo
   const handleFileChange = (e) => {
@@ -93,68 +98,80 @@ const PianoTranscription = () => {
 
   // Polling para verificar el estado
   const startPolling = (taskId) => {
-    // Limpiar cualquier polling anterior
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-    }
+    clearPollingTimer();
 
-    let errorCount = 0;
-    const maxErrors = 3; // Máximo de errores consecutivos antes de abortar
-    
-    // Esperar 1 segundo antes de empezar el polling para dar tiempo al backend
-    setTimeout(() => {
-      pollingIntervalRef.current = setInterval(async () => {
-        try {
-          const response = await fetch(`${API_BASE_URL}/transcribe/status/${taskId}`);
-          
-          // Si es 404, la tarea aún no está lista o fue limpiada
-          if (response.status === 404) {
-            errorCount++;
-            console.log(`⚠️ Tarea no encontrada (${errorCount}/${maxErrors})`);
-            
-            // Si hay demasiados errores 404 consecutivos, abortar
-            if (errorCount >= maxErrors) {
-              throw new Error('La tarea no se encontró después de varios intentos');
-            }
-            return; // Continuar polling
-          }
-          
-          if (!response.ok) {
-            throw new Error(`Error del servidor: ${response.status}`);
-          }
-          
-          // Resetear contador de errores si la petición fue exitosa
-          errorCount = 0;
-          
-          const data = await response.json();
-          setMessage(data.message);
-          
-          if (data.status === 'completed') {
-            setStatus('completed');
-            setHasPdf(data.has_pdf);
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-            console.log('✅ Transcripción completada - polling detenido');
-          } else if (data.status === 'failed') {
+    let consecutiveErrors = 0;
+    const maxErrors = 5; // Máximo de errores consecutivos antes de abortar
+
+    const scheduleNextPoll = () => {
+      pollingTimeoutRef.current = setTimeout(poll, 6000);
+    };
+
+    const poll = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/transcribe/status/${taskId}`);
+
+        if (response.status === 404) {
+          consecutiveErrors++;
+          console.log(`⚠️ Tarea no encontrada (${consecutiveErrors}/${maxErrors})`);
+
+          if (consecutiveErrors >= maxErrors) {
             setStatus('error');
-            setError(data.error);
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-            console.log('❌ Transcripción fallida - polling detenido');
-          } else {
-            // Actualizar estado de PDF solo si está en proceso
-            setHasPdf(data.has_pdf);
-            console.log(`⏳ Estado: ${data.status} - ${data.message}`);
+            setError('La tarea no se encontró después de varios intentos');
+            setMessage('No pudimos recuperar el estado de la transcripción.');
+            clearPollingTimer();
+            return;
           }
-        } catch (err) {
-          console.error('Error en polling:', err);
+
+          setMessage('El servidor sigue preparando tu transcripción, reintentando...');
+          scheduleNextPoll();
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status}`);
+        }
+
+        const data = await response.json();
+        consecutiveErrors = 0;
+        setMessage(data.message);
+        setHasPdf(data.has_pdf);
+
+        if (data.status === 'completed') {
+          setStatus('completed');
+          clearPollingTimer();
+          console.log('✅ Transcripción completada - polling detenido');
+          return;
+        }
+
+        if (data.status === 'failed') {
+          setStatus('error');
+          setError(data.error || 'La transcripción falló');
+          clearPollingTimer();
+          console.log('❌ Transcripción fallida - polling detenido');
+          return;
+        }
+
+        console.log(`⏳ Estado: ${data.status} - ${data.message}`);
+        scheduleNextPoll();
+      } catch (err) {
+        consecutiveErrors++;
+        console.error('Error en polling:', err);
+
+        if (consecutiveErrors >= maxErrors) {
           setStatus('error');
           setError(err.message || 'Error al verificar el estado de la transcripción');
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
+          clearPollingTimer();
+          return;
         }
-      }, 6000); // Polling cada 6 segundos
-    }, 1000); // Esperar 1 segundo antes de iniciar
+
+        setMessage('Estamos teniendo demoras con el servidor, seguimos intentando...');
+        scheduleNextPoll();
+      }
+    };
+
+    // Primer intento con una pequeña espera para darle tiempo al backend
+    pollingTimeoutRef.current = setTimeout(poll, 1000);
   };
 
   // Descargar PDF
@@ -169,11 +186,8 @@ const PianoTranscription = () => {
   // Reiniciar
   const reset = () => {
     // Limpiar polling si existe
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-      console.log('🧹 Polling limpiado en reset');
-    }
+    clearPollingTimer();
+    console.log('🧹 Polling limpiado en reset');
     
     setFile(null);
     setTaskId(null);
