@@ -92,7 +92,7 @@ const PianoTranscription = () => {
               try {
                 const responseData = JSON.parse(xhr.responseText);
                 resolve(responseData);
-              } catch (parseError) {
+              } catch (_parseError) {
                 reject(new Error('Respuesta inválida del servidor'));
               }
             } else {
@@ -100,7 +100,7 @@ const PianoTranscription = () => {
               try {
                 const parsed = JSON.parse(xhr.responseText || '{}');
                 detail = parsed.detail || detail;
-              } catch (e) {
+              } catch (_ignored) {
                 // ignorar error de parseo
               }
               reject(new Error(detail));
