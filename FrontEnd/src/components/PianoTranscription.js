@@ -12,8 +12,6 @@ const PianoTranscription = () => {
   const [error, setError] = useState(null);
   const [hasPdf, setHasPdf] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [processProgress, setProcessProgress] = useState(0);
           
   // Referencia para el intervalo de polling
   const pollingTimeoutRef = useRef(null);
@@ -65,60 +63,28 @@ const PianoTranscription = () => {
     }
 
     setStatus('uploading');
-    setMessage('Subiendo archivo... 0%');
+    setMessage('Subiendo archivo...');
     setError(null);
-    setUploadProgress(0);
-    setProcessProgress(0);
 
     try {
+      // 1. Subir archivo e iniciar transcripción
       const formData = new FormData();
       formData.append('file', file);
 
-      const uploadWithProgress = () =>
-        new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', `${API_BASE_URL}/transcribe/`);
+      const response = await fetch(`${API_BASE_URL}/transcribe/`, {
+        method: 'POST',
+        body: formData,
+      });
 
-          xhr.upload.onprogress = (event) => {
-            if (event.lengthComputable) {
-              const percent = Math.round((event.loaded / event.total) * 100);
-              setUploadProgress(percent);
-              setMessage(`Subiendo archivo... ${percent}%`);
-            }
-          };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Error al iniciar transcripción');
+      }
 
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              try {
-                const responseData = JSON.parse(xhr.responseText);
-                resolve(responseData);
-              } catch (parseError) {
-                console.error('Respuesta inválida del servidor', parseError);
-                reject(new Error('Respuesta inválida del servidor'));
-              }
-            } else {
-              let detail = xhr.statusText || 'Error al iniciar transcripción';
-              try {
-                const parsed = JSON.parse(xhr.responseText || '{}');
-                detail = parsed.detail || detail;
-              } catch (parseError) {
-                console.warn('No se pudo parsear detalle del error', parseError);
-                // ignorar error de parseo
-              }
-              reject(new Error(detail));
-            }
-          };
-
-          xhr.onerror = () => reject(new Error('Error de red al subir el archivo'));
-          xhr.send(formData);
-        });
-
-      const data = await uploadWithProgress();
-      setUploadProgress(100);
+      const data = await response.json();
       setTaskId(data.task_id);
       setStatus('processing');
       setMessage('Transcripción en proceso...');
-      setProcessProgress(0);
 
       // 2. Iniciar polling para verificar el estado
       startPolling(data.task_id);
@@ -170,13 +136,8 @@ const PianoTranscription = () => {
         consecutiveErrors = 0;
         setMessage(data.message);
         setHasPdf(data.has_pdf);
-        if (typeof data.progress === 'number' && !Number.isNaN(data.progress)) {
-          const normalizedProgress = Math.max(0, Math.min(100, Math.round(data.progress)));
-          setProcessProgress((prev) => Math.max(prev, normalizedProgress));
-        }
 
         if (data.status === 'completed') {
-          setProcessProgress(100);
           setStatus('completed');
           clearPollingTimer();
           console.log('✅ Transcripción completada - polling detenido');
@@ -235,8 +196,6 @@ const PianoTranscription = () => {
     setError(null);
     setHasPdf(false);
     setAcceptTerms(false);
-    setUploadProgress(0);
-    setProcessProgress(0);
   };
 
   return (
@@ -357,27 +316,18 @@ const PianoTranscription = () => {
                 </p>
                 
                 <p className="text-base text-blue-200 text-center">{message}</p>
-                <div className="mt-6">
-                  <div className="flex items-center justify-between text-sm text-blue-200 mb-2">
-                    <span>{status === 'uploading' ? 'Progreso de subida' : 'Progreso de transcripción'}</span>
-                    <span>
-                      {`${status === 'uploading' ? uploadProgress : processProgress}%`}
-                    </span>
-                  </div>
-                  <div className="w-full h-3 bg-slate-900/70 rounded-full overflow-hidden border border-slate-700/70">
-                    <div
-                      className="h-full bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 transition-all duration-500"
-                      style={{
-                        width: `${Math.max(0, Math.min(100, status === 'uploading' ? uploadProgress : processProgress))}%`
-                      }}
-                    ></div>
+                
+                {/* Animación de puntos saltando */}
+                <div className="flex justify-center mt-4">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce"></div>
+                    <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                   </div>
                 </div>
                 
                 <p className="text-sm text-blue-300/70 text-center mt-6">
-                  {status === 'uploading'
-                    ? 'Estamos subiendo tu archivo sin perder calidad. No cierres esta ventana.'
-                    : 'Calculando la transcripción en servidor, este paso puede tardar varios minutos.'}
+                  Este proceso puede tardar varios minutos dependiendo de la duración del audio
                 </p>
               </div>
             </div>
