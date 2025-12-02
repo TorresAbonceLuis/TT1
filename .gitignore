@@ -14,6 +14,14 @@ venv/
 env/
 ENV/
 
+# Modelos de Machine Learning (archivos grandes)
+*.keras
+*.h5
+*.pb
+*.onnx
+*.pt
+*.pth
+
 # Node
 node_modules/
 .next/
