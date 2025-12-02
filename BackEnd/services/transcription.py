@@ -1,259 +1,458 @@
 # -*- coding: utf-8 -*-
-# services/transcription.py (VERSIÓN FINAL CORREGIDA)
+# services/transcription.py
 #
-# Objetivo: Garantizar la coherencia de pre-procesamiento (normalización) 
-# y la carga del modelo para igualar el rendimiento de la consola.
+# SERVICIO DE TRANSCRIPCIÓN DE PIANO (VERSION GOLD)
+#
+# Características Fusionadas:
+# 1. Seguridad: Carga de pesos con 'build_modelo_definitivo' (Fix Lambda).
+# 2. Eficiencia: Sliding Window View + GPU Memory Growth.
+# 3. Robustez: Filtro Nyquist seguro + Ordenamiento MIDI.
+# 4. Feedback: Reporte de notas descartadas y logs detallados.
 
 import os
+import sys
 import numpy as np
-import keras
-import pretty_midi as pm
-import math
-from typing import Tuple, List
-
-# Importamos librosa y scipy para el procesamiento de audio
 import librosa
-import scipy.signal as signal 
+import pretty_midi
+from scipy.signal import butter, sosfilt
+import time
+import gc
+import tensorflow as tf
+from typing import Dict, List, Tuple, Optional
 
-# --- Parámetros del Modelo ---
-SEQ_LEN = 100
-N_MELS_FEATURE = 128  # Base para el cálculo de Mel
-N_MELS_MODELO = 384   # 128 * 3 (Mel + Delta + Delta-Delta)
-N_KEYS = 88
-LOW_MIDI = 21
-SR = 22050
-HOP_LENGTH = 512
-N_FFT = 2048
-F_MIN = 25.0
-F_MAX = 6000.0
+# Configurar GPU para uso eficiente de memoria
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        print(f"✅ GPU configurada: {len(gpus)} dispositivo(s)")
+    except RuntimeError as e:
+        print(f"⚠️ Error configurando GPU: {e}")
 
-# Parámetros para Chunking
-CHUNK_SIZE_FRAMES = 10000
-pad_width = SEQ_LEN // 2
+# Importar arquitectura y parámetros del modelo
+try:
+    from modelos.modelo_definitivo import build_modelo_definitivo, SEQ_LEN, N_MELS, N_KEYS
+    print(f"✅ Modelo importado: SEQ_LEN={SEQ_LEN}, N_MELS={N_MELS}, N_KEYS={N_KEYS}")
+except ImportError as e:
+    print(f"❌ ERROR: No se pudo importar modelo_definitivo.py - {e}")
+    raise
 
-# Umbrales de detección (Óptimos según tu último entrenamiento)
-T_ONSETS = 0.35
-T_FRAMES = 0.40
+# Importar configuración
+from config import settings
 
-# Configuración del modelo
-NOMBRE_MODELO_CAMPEON = "modelo.keras" 
-MODELO_CAMPEON_PATH = os.path.join("modelos", NOMBRE_MODELO_CAMPEON)
-
-
-# --- Funciones de Preprocesamiento ---
-
-def load_audio_mono(audio_path: str, sr: int = SR) -> Tuple[np.ndarray, int]:
-    """Carga un archivo de audio en mono y normaliza el peak."""
-    y, sr_loaded = librosa.load(audio_path, sr=sr, mono=True)
-    peak = np.max(np.abs(y)) if y.size else 1.0
-    if peak > 0:
-        y = y / peak
-    return y.astype(np.float32), sr_loaded
+# Variable global para cache del modelo (evitar recargar en cada petición)
+_cached_model = None
+_cached_model_path = None
 
 
-def aplicar_filtro_paso_bajo(y: np.ndarray, sr: int, corte_hz: int = 6000) -> np.ndarray:
+def get_model():
     """
-    Aplica un filtro paso bajo a un array de audio en memoria.
-    (Basado en 1limpiarAudio.py - Consistencia con entrenamiento)
+    Obtiene el modelo de transcripción (con cache para eficiencia).
+    Si ya está cargado, retorna la instancia en caché.
     """
-    nyquist = sr * 0.5
-    frecuencia_normalizada = corte_hz / nyquist
+    global _cached_model, _cached_model_path
     
-    # Crear filtro Butterworth (orden N=5)
-    b, a = signal.butter(
-        N=5,
-        Wn=frecuencia_normalizada,
-        btype='low',
-        analog=False
-    )
+    model_path = settings.MODEL_PATH
     
-    # Aplicar el filtro
-    audio_filtrado = signal.filtfilt(b, a, y)
-    return audio_filtrado.astype(np.float32)
+    # Si el modelo ya está en caché y no ha cambiado la ruta, retornarlo
+    if _cached_model is not None and _cached_model_path == model_path:
+        print(f"♻️ Usando modelo en caché")
+        return _cached_model
+    
+    # Validar que exista el archivo de pesos
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Modelo no encontrado: {model_path}")
+    
+    print(f"🔧 Cargando modelo desde: {model_path}")
+    
+    # Construir arquitectura
+    model = build_modelo_definitivo(seq_len=SEQ_LEN, n_mels=N_MELS, n_keys=N_KEYS)
+    
+    # Cargar pesos
+    model.load_weights(model_path)
+    print(f"✅ Pesos cargados exitosamente")
+    
+    # Guardar en caché
+    _cached_model = model
+    _cached_model_path = model_path
+    
+    return model
 
 
-def extract_mel_spectrogram(y: np.ndarray, sr: int) -> Tuple[np.ndarray, np.ndarray]:
+# ===================================================================
+# ========= PROCESAMIENTO DE SEÑAL =================================
+# ===================================================================
+
+def butter_bandpass_filter(y: np.ndarray, lowcut: float, highcut: float, 
+                          sr: int, order: int = 5) -> np.ndarray:
     """
-    Calcula el Mel Spectrogram logarítmico (en dB) + Delta + Delta-Delta.
-    Exactamente como en el pipeline de entrenamiento.
-    """
-    # 1. Calcular el Mel Spectrogram (Potencia)
-    S = librosa.feature.melspectrogram(
-        y=y,
-        sr=sr,
-        n_fft=N_FFT,
-        hop_length=HOP_LENGTH,
-        n_mels=N_MELS_FEATURE,
-        fmin=F_MIN,
-        fmax=F_MAX
-    )
+    Aplica un filtro pasabanda Butterworth a la señal de audio.
+    Incluye protección contra errores de Nyquist.
     
-    # 2. Convertir a Decibelios
-    S_db = librosa.power_to_db(S, ref=np.max)
-    
-    # 3. Calcular Delta (Velocidad) y Delta-Delta (Aceleración)
-    S_delta = librosa.feature.delta(S_db)
-    S_delta2 = librosa.feature.delta(S_db, order=2)
-    
-    # 4. Concatenar las 3 matrices
-    S_full = np.concatenate((S_db, S_delta, S_delta2), axis=0)
-
-    # 5. Transponer a (n_frames, 3 * n_mels) = (n_frames, 384)
-    X = S_full.T
-    
-    # 6. Generar los tiempos de frame
-    frame_times = librosa.frames_to_time(
-        np.arange(X.shape[0]), 
-        sr=sr, 
-        hop_length=HOP_LENGTH
-    )
-    
-    # 7. Normalizar los datos
-    X = (X / 80.0) + 1.0 
-    
-    return X.astype(np.float32), frame_times
-
-
-# --- Función de Predicción con Ventanas Deslizantes ---
-
-def run_inference_with_sliding_window(
-    model: keras.Model,
-    input_features: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Realiza la inferencia usando ventanas deslizantes, igual que en 6inferencia.py.
-    """
-    total_frames = input_features.shape[0]
-    
-    # 1. Añadir padding al inicio y fin para centrar las ventanas
-    X_padded = np.pad(input_features, ((pad_width, pad_width), (0, 0)), 'constant')
-    
-    # 2. Crear el dataset de ventanas deslizantes usando Keras
-    dataset = keras.utils.timeseries_dataset_from_array(
-        data=X_padded,
-        targets=None,
-        sequence_length=SEQ_LEN,
-        sequence_stride=1,      # Una ventana por cada frame
-        batch_size=64           # Ajusta según memoria disponible
-    )
-    
-    # 3. Obtener predicciones
-    # La salida tendrá forma (total_frames + padding, 100, 88)
-    P_onsets_full, P_frames_full = model.predict(dataset, verbose=0)
-    
-    # 4. Extraer solo la predicción del frame central (índice 50)
-    P_onsets_all = P_onsets_full[:, pad_width, :]
-    P_frames_all = P_frames_full[:, pad_width, :]
-
-    # 5. Truncar predicciones al tamaño original de frames
-    P_onsets_flat = P_onsets_all[:total_frames]
-    P_frames_flat = P_frames_all[:total_frames]
-    
-    # 6. Aplicar Umbrales
-    Y_onsets_binary = (P_onsets_flat > T_ONSETS).astype(np.uint8)
-    Y_frames_binary = (P_frames_flat > T_FRAMES).astype(np.uint8)
-    
-    return Y_onsets_binary, Y_frames_binary
-
-
-# --- Decodificación a MIDI ---
-
-def piano_roll_to_midi(
-    P_onsets_binary: np.ndarray,
-    P_frames_binary: np.ndarray,
-    frame_times: np.ndarray
-) -> pm.PrettyMIDI:
-    """
-    Convierte los piano rolls binarios (Onsets y Frames) en un objeto PrettyMIDI.
-    Usa Onsets para INICIAR notas y Frames para SOSTENER/TERMINAR notas.
-    Exactamente como en 6inferencia.py
-    """
-    n_frames, n_keys = P_frames_binary.shape
-    hop_duration_s = HOP_LENGTH / SR
-    
-    pm_obj = pm.PrettyMIDI()
-    instrument = pm.Instrument(program=0, name="Piano (Transcripción)")
-    
-    for k in range(n_keys):
-        pitch = LOW_MIDI + k
-        note_active = False
-        start_time = 0.0
+    Args:
+        y: Señal de audio
+        lowcut: Frecuencia de corte inferior (Hz)
+        highcut: Frecuencia de corte superior (Hz)
+        sr: Sample rate
+        order: Orden del filtro
         
-        for frame_idx in range(n_frames):
-            frame_time = frame_times[frame_idx]
-            is_onset = P_onsets_binary[frame_idx, k] == 1
-            is_active = P_frames_binary[frame_idx, k] == 1
-            
-            # Caso 1: Inicia una nota (Hay onset y no hay nota activa)
-            if is_onset and not note_active:
-                note_active = True
-                start_time = frame_time
-            
-            # Caso 2: Termina una nota (No hay frame activo y SÍ había nota activa)
-            if not is_active and note_active:
-                note_active = False
-                end_time = frame_time
-                # Evitar notas de duración cero
-                if end_time > start_time:
-                    note = pm.Note(velocity=100, pitch=pitch, start=start_time, end=end_time)
-                    instrument.notes.append(note)
-
-        # Caso 3: La nota estaba activa hasta el final del audio
-        if note_active:
-            end_time = frame_times[-1] + hop_duration_s
-            if end_time > start_time:
-                note = pm.Note(velocity=100, pitch=pitch, start=start_time, end=end_time)
-                instrument.notes.append(note)
-                
-    pm_obj.instruments.append(instrument)
-    return pm_obj
-
-
-# --- Función Principal de Transcripción (Síncrona) ---
-
-def transcribe_piano_audio(
-    audio_path: str,
-    output_midi_path: str
-) -> dict:
+    Returns:
+        Señal filtrada y normalizada
     """
-    Transcribe un archivo de audio de piano a MIDI.
-    """
+    nyq = 0.5 * sr
+    low = max(0.001, lowcut / nyq)
+    high = min(0.999999, highcut / nyq)  # Protección Nyquist
     
-    if not os.path.exists(MODELO_CAMPEON_PATH):
-        # NOTA: En la web, esto puede fallar si la ruta es relativa.
-        raise FileNotFoundError(f"No se encontró el modelo en: {MODELO_CAMPEON_PATH}")
+    if low >= high:
+        raise ValueError(f"Filtro inválido: low={low}, high={high}")
+    
+    sos = butter(order, [low, high], btype='band', output='sos')
+    filtered = sosfilt(sos, y.astype(np.float32))
+    
+    return librosa.util.normalize(filtered)
+
+
+def load_and_prep_audio(path: str) -> np.ndarray:
+    """
+    Carga y preprocesa el archivo de audio.
+    
+    Args:
+        path: Ruta al archivo WAV
+        
+    Returns:
+        Señal de audio procesada
+    """
+    print(f"🎵 Cargando audio: {os.path.basename(path)}")
     
     try:
-        # 1. Cargar Audio
-        y_mono, sr_loaded = load_audio_mono(audio_path, sr=SR)
+        # Cargar audio con el sample rate del modelo
+        y, _ = librosa.load(path, sr=settings.SAMPLE_RATE, mono=True)
         
-        # 2. Aplicar filtro paso bajo (para consistencia con entrenamiento)
-        y_filtrado = aplicar_filtro_paso_bajo(y_mono, sr_loaded, corte_hz=F_MAX)
+        # Aplicar filtro pasabanda
+        y = butter_bandpass_filter(
+            y, 
+            settings.LOW_CUT, 
+            settings.HIGH_CUT, 
+            settings.SAMPLE_RATE, 
+            settings.FILTER_ORDER
+        )
         
-        # 3. Extraer Características (Mel + Delta + Delta-Delta + NORMALIZADAS)
-        X_features, frame_times = extract_mel_spectrogram(y_filtrado, sr_loaded)
-        total_frames = X_features.shape[0]
+        print(f"   ✅ Audio cargado: {len(y)/settings.SAMPLE_RATE:.2f}s")
+        return y
         
-        # 4. Cargar Modelo
-        model = keras.models.load_model(MODELO_CAMPEON_PATH)
+    except Exception as e:
+        print(f"❌ Error cargando audio: {e}")
+        raise
+
+
+def compute_spectrogram(y: np.ndarray) -> np.ndarray:
+    """
+    Calcula el espectrograma mel del audio.
+    
+    Args:
+        y: Señal de audio
         
-        # 5. Inferencia (usando ventanas deslizantes, como en 6inferencia.py)
-        Y_onsets, Y_frames = run_inference_with_sliding_window(model, X_features)
+    Returns:
+        Espectrograma mel normalizado (frames, n_mels)
+    """
+    print(f"📊 Calculando espectrograma mel...")
+    
+    # Calcular espectrograma mel
+    S = librosa.feature.melspectrogram(
+        y=y,
+        sr=settings.SAMPLE_RATE,
+        n_fft=settings.N_FFT,
+        hop_length=settings.HOP_LENGTH,
+        n_mels=settings.N_MELS,
+        fmin=settings.F_MIN,
+        fmax=settings.F_MAX
+    )
+    
+    # Convertir a dB
+    S_db = librosa.power_to_db(S, ref=np.max)
+    
+    # Normalizar a rango [0, 1] aproximadamente
+    # (espectrograma típico: -80 dB a 0 dB)
+    S_normalized = ((S_db.T / 80.0) + 1.0).astype(np.float32)
+    
+    print(f"   ✅ Espectrograma: {S_normalized.shape[0]} frames")
+    return S_normalized
+
+
+# ===================================================================
+# ========= DECODIFICACIÓN (CON REPORTE DE ESTADÍSTICAS) ===========
+# ===================================================================
+
+def predictions_to_notes(p_onsets: np.ndarray, p_frames: np.ndarray, 
+                        n_frames: int) -> List[Tuple[int, float, float]]:
+    """
+    Convierte las predicciones del modelo a una lista de notas MIDI.
+    
+    Args:
+        p_onsets: Predicciones de onsets (n_frames, n_keys)
+        p_frames: Predicciones de frames (n_frames, n_keys)
+        n_frames: Número de frames a procesar
         
-        # 6. Decodificación a MIDI
-        midi_predicho = piano_roll_to_midi(Y_onsets, Y_frames, frame_times)
+    Returns:
+        Lista de tuplas (pitch_midi, start_time, end_time)
+    """
+    print(f"🎼 Decodificando notas...")
+    print(f"   Umbrales: Onsets>{settings.UMBRAL_ONSETS}, Frames>{settings.UMBRAL_FRAMES}")
+    
+    frame_dur = settings.HOP_LENGTH / settings.SAMPLE_RATE
+    
+    # Aplicar umbrales
+    b_onsets = (p_onsets > settings.UMBRAL_ONSETS)
+    b_frames = (p_frames > settings.UMBRAL_FRAMES)
+    
+    # Estado de las notas
+    note_state = np.zeros(N_KEYS, dtype=bool)
+    note_start = np.zeros(N_KEYS, dtype=int)
+    notes = []
+    discarded_count = 0
+    
+    # Procesar frame por frame
+    for t in range(n_frames):
+        for k in range(N_KEYS):
+            is_onset = b_onsets[t, k]
+            is_frame = b_frames[t, k]
+            
+            # Detectar onset (inicio de nota)
+            if is_onset:
+                # Si había una nota activa, cerrarla
+                if note_state[k]:
+                    start_t = note_start[k] * frame_dur
+                    end_t = t * frame_dur
+                    duration = end_t - start_t
+                    
+                    if duration >= settings.DURACION_MINIMA_S:
+                        notes.append((k + settings.LOW_MIDI, start_t, end_t))
+                    else:
+                        discarded_count += 1
+                
+                # Iniciar nueva nota
+                note_state[k] = True
+                note_start[k] = t
+            
+            # Detectar offset (fin de nota)
+            elif not is_frame and note_state[k]:
+                start_t = note_start[k] * frame_dur
+                end_t = t * frame_dur
+                duration = end_t - start_t
+                
+                if duration >= settings.DURACION_MINIMA_S:
+                    notes.append((k + settings.LOW_MIDI, start_t, end_t))
+                else:
+                    discarded_count += 1
+                
+                note_state[k] = False
+    
+    # Cerrar notas pendientes al final
+    total_dur = n_frames * frame_dur
+    for k in range(N_KEYS):
+        if note_state[k]:
+            start_t = note_start[k] * frame_dur
+            duration = total_dur - start_t
+            
+            if duration >= settings.DURACION_MINIMA_S:
+                notes.append((k + settings.LOW_MIDI, start_t, total_dur))
+            else:
+                discarded_count += 1
+    
+    # Ordenar notas cronológicamente (importante para MIDI)
+    notes.sort(key=lambda x: x[1])
+    
+    print(f"   ✅ Notas detectadas: {len(notes)}")
+    print(f"   ⚠️ Notas descartadas (ruido < {settings.DURACION_MINIMA_S*1000:.0f}ms): {discarded_count}")
+    
+    return notes
+
+
+def save_midi(notes_list: List[Tuple[int, float, float]], output_path: str) -> Dict:
+    """
+    Guarda la lista de notas en un archivo MIDI.
+    
+    Args:
+        notes_list: Lista de tuplas (pitch, start, end)
+        output_path: Ruta donde guardar el MIDI
         
-        # 7. Guardar MIDI
-        midi_predicho.write(output_midi_path)
+    Returns:
+        Diccionario con información del MIDI generado
+    """
+    print(f"💾 Guardando MIDI...")
+    
+    # Crear objeto MIDI
+    pm = pretty_midi.PrettyMIDI()
+    piano = pretty_midi.Instrument(program=0)  # Acoustic Grand Piano
+    
+    # Agregar notas
+    for pitch, start, end in notes_list:
+        note = pretty_midi.Note(
+            velocity=100,
+            pitch=int(pitch),
+            start=start,
+            end=end
+        )
+        piano.notes.append(note)
+    
+    pm.instruments.append(piano)
+    pm.write(output_path)
+    
+    # Calcular estadísticas
+    total_duration = pm.get_end_time()
+    note_density = len(notes_list) / total_duration if total_duration > 0 else 0
+    
+    # Obtener rango de notas
+    if notes_list:
+        pitches = [n[0] for n in notes_list]
+        lowest_note = min(pitches)
+        highest_note = max(pitches)
+        pitch_range = highest_note - lowest_note
+    else:
+        lowest_note = highest_note = pitch_range = 0
+    
+    info = {
+        "total_notes": len(notes_list),
+        "duration_seconds": round(total_duration, 2),
+        "note_density": round(note_density, 2),
+        "lowest_note": int(lowest_note),
+        "highest_note": int(highest_note),
+        "pitch_range": int(pitch_range)
+    }
+    
+    print(f"   ✅ MIDI guardado: {output_path}")
+    print(f"   📊 Estadísticas: {info['total_notes']} notas, {info['duration_seconds']}s")
+    
+    return info
+
+
+# ===================================================================
+# ========= FUNCIÓN PRINCIPAL (API PARA EL BACKEND) =================
+# ===================================================================
+
+def transcribe_piano_audio(audio_path: str, output_midi_path: str) -> Dict:
+    """
+    Función principal de transcripción para el backend.
+    
+    Args:
+        audio_path: Ruta al archivo de audio WAV
+        output_midi_path: Ruta donde guardar el MIDI resultante
         
+    Returns:
+        Diccionario con información de la transcripción
+    """
+    print("="*60)
+    print("🎹 INICIANDO TRANSCRIPCIÓN DE PIANO 🎹")
+    print("="*60)
+    
+    t_start = time.time()
+    
+    try:
+        # 1. Validar entrada
+        if not os.path.exists(audio_path):
+            raise FileNotFoundError(f"Archivo de audio no encontrado: {audio_path}")
+        
+        # 2. Cargar y procesar audio
+        y = load_and_prep_audio(audio_path)
+        spectrogram = compute_spectrogram(y)
+        n_frames = spectrogram.shape[0]
+        
+        # 3. Crear ventanas deslizantes (sliding window)
+        print(f"🪟 Creando ventanas deslizantes...")
+        pad_width = SEQ_LEN // 2
+        padded_S = np.pad(spectrogram, ((pad_width, pad_width), (0, 0)), mode='constant')
+        
+        # Usar stride tricks para eficiencia
+        windows = np.lib.stride_tricks.sliding_window_view(
+            padded_S, (SEQ_LEN, N_MELS)
+        )[:, 0, :, :]
+        windows = windows[:n_frames]
+        
+        print(f"   ✅ Ventanas creadas: {len(windows)}")
+        
+        # 4. Cargar modelo
+        model = get_model()
+        
+        # 5. Inferencia
+        print(f"🔮 Ejecutando inferencia...")
+        preds = model.predict(windows, batch_size=settings.INFER_BATCH_SIZE, verbose=0)
+        
+        # Manejar diferentes formatos de salida
+        if isinstance(preds, list):
+            p_onsets, p_frames = preds[0], preds[1]
+        else:
+            p_onsets = preds['output_onsets']
+            p_frames = preds['output_frames']
+        
+        # Extraer predicción del centro de cada ventana
+        center_idx = SEQ_LEN // 2
+        p_onsets = p_onsets[:, center_idx, :]
+        p_frames = p_frames[:, center_idx, :]
+        
+        print(f"   ✅ Inferencia completada")
+        
+        # 6. Liberar memoria
+        del windows
+        gc.collect()
+        
+        # 7. Decodificar notas
+        notes = predictions_to_notes(p_onsets, p_frames, n_frames)
+        
+        # 8. Guardar MIDI
+        midi_info = save_midi(notes, output_midi_path)
+        
+        # 9. Calcular tiempo total
+        total_time = time.time() - t_start
+        
+        print(f"\n⏱️ Tiempo total: {total_time:.2f}s")
+        print("✨ ¡Transcripción completada exitosamente!")
+        print("="*60)
+        
+        # Retornar información completa
         return {
             "success": True,
+            "processing_time": round(total_time, 2),
+            "audio_duration": round(len(y) / settings.SAMPLE_RATE, 2),
             "midi_path": output_midi_path,
-            "total_frames": total_frames,
-            "duration_seconds": float(frame_times[-1]),
-            "total_notes": len(midi_predicho.instruments[0].notes)
+            **midi_info
         }
         
     except Exception as e:
-        # En producción, usa logging.error(e)
-        raise Exception(f"Error en la transcripción: {str(e)}")
+        print(f"\n❌ ERROR EN TRANSCRIPCIÓN: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        return {
+            "success": False,
+            "error": str(e),
+            "processing_time": round(time.time() - t_start, 2)
+        }
+
+
+# ===================================================================
+# ========= TEST INDEPENDIENTE ======================================
+# ===================================================================
+
+if __name__ == "__main__":
+    """
+    Test independiente del servicio de transcripción.
+    """
+    print("🧪 MODO TEST - Servicio de Transcripción")
+    
+    # Archivo de prueba
+    test_wav = "temp_uploads/test_audio.wav"
+    test_midi = "temp_uploads/test_output.mid"
+    
+    if not os.path.exists(test_wav):
+        print(f"❌ Archivo de prueba no encontrado: {test_wav}")
+        print(f"   Coloca un archivo WAV en esa ubicación para probar.")
+        sys.exit(1)
+    
+    # Ejecutar transcripción
+    result = transcribe_piano_audio(test_wav, test_midi)
+    
+    # Mostrar resultado
+    print(f"\n📋 RESULTADO:")
+    for key, value in result.items():
+        print(f"   {key}: {value}")

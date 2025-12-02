@@ -11,9 +11,7 @@ import uuid
 router = APIRouter(tags=["Piano Transcription"])
 
 # Diccionario en memoria para almacenar estado de transcripciones
-# En producción, usar Redis o base de datos
 transcription_status = {}
-
 
 @router.post("/transcribe/")
 async def start_transcription(file: UploadFile = File(...)):
