@@ -12,6 +12,7 @@ const PianoTranscription = () => {
   const [error, setError] = useState(null);
   const [hasPdf, setHasPdf] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
           
   // Referencia para el intervalo de polling
   const pollingTimeoutRef = useRef(null);
@@ -33,9 +34,8 @@ const PianoTranscription = () => {
     }
   };
 
-  // Manejar selección de archivo
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
+  // Validar y procesar archivo
+  const processFile = (selectedFile) => {
     if (selectedFile) {
       // Validar formato - SOLO WAV
       const fileExtension = '.' + selectedFile.name.split('.').pop().toLowerCase();
@@ -48,6 +48,36 @@ const PianoTranscription = () => {
         setFile(null);
       }
     }
+  };
+
+  // Manejar selección de archivo
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    processFile(selectedFile);
+  };
+
+  // Manejar drag over
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  // Manejar drag leave
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  // Manejar drop
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const droppedFile = e.dataTransfer.files[0];
+    processFile(droppedFile);
   };
 
   // Iniciar transcripción
@@ -217,7 +247,16 @@ const PianoTranscription = () => {
           {status === 'idle' && (
             <div className="space-y-4">
               {/* Área de carga con ilustración de piano */}
-              <div className="relative bg-slate-900/50 border-2 border-dashed border-cyan-500/50 rounded-2xl p-8 text-center hover:border-cyan-400 hover:bg-slate-900/70 transition-all duration-300">
+              <div 
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${
+                  isDragging
+                    ? 'bg-cyan-900/30 border-cyan-400 scale-[1.02]'
+                    : 'bg-slate-900/50 border-cyan-500/50 hover:border-cyan-400 hover:bg-slate-900/70'
+                }`}
+              >
                 <input
                   type="file"
                   accept=".wav"
@@ -261,7 +300,7 @@ const PianoTranscription = () => {
                   </div>
 
                   <p className="text-white text-base font-medium mb-1">
-                    {file ? `📁 ${file.name}` : 'Haz clic para seleccionar'}
+                    {file ? `📁 ${file.name}` : isDragging ? '¡Suelta el archivo aquí!' : 'Haz clic o arrastra un archivo'}
                   </p>
                   <p className="text-blue-300 text-sm">
                     Solo archivos WAV
