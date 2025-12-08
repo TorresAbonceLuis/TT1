@@ -22,11 +22,11 @@ async def start_transcription(file: UploadFile = File(...)):
     temp_audio_path = None
     
     try:
-        # Validar que es un archivo WAV únicamente
-        if not file.filename.lower().endswith('.wav'):
+        # Validar que es un archivo WAV o MP3
+        if not (file.filename.lower().endswith('.wav') or file.filename.lower().endswith('.mp3')):
             raise HTTPException(
                 status_code=400,
-                detail="Formato de audio no soportado. Solo se permiten archivos WAV"
+                detail="Formato de audio no soportado. Solo se permiten archivos WAV y MP3"
             )
         
         # Guardar archivo temporalmente

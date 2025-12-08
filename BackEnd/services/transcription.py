@@ -118,7 +118,7 @@ def load_and_prep_audio(path: str) -> np.ndarray:
     Carga y preprocesa el archivo de audio.
     
     Args:
-        path: Ruta al archivo WAV
+        path: Ruta al archivo de audio (WAV o MP3)
         
     Returns:
         Señal de audio procesada

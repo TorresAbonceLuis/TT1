@@ -3,13 +3,13 @@ from fastapi import UploadFile
 import os
 
 def validate_wav_file(file: UploadFile):
-    """Valida que el archivo sea WAV antes de procesarlo"""
+    """Valida que el archivo sea WAV o MP3 antes de procesarlo"""
     # Validar extensión
     file_ext = os.path.splitext(file.filename)[1].lower()
-    if file_ext != '.wav':
+    if file_ext not in ['.wav', '.mp3']:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Solo se permiten archivos WAV (.wav)"
+            detail="Solo se permiten archivos WAV (.wav) o MP3 (.mp3)"
         )
     
     # Validar tamaño (máximo 100MB)

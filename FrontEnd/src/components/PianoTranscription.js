@@ -37,14 +37,14 @@ const PianoTranscription = () => {
   // Validar y procesar archivo
   const processFile = (selectedFile) => {
     if (selectedFile) {
-      // Validar formato - SOLO WAV
+      // Validar formato - WAV y MP3
       const fileExtension = '.' + selectedFile.name.split('.').pop().toLowerCase();
       
-      if (fileExtension === '.wav') {
+      if (fileExtension === '.wav' || fileExtension === '.mp3') {
         setFile(selectedFile);
         setError(null);
       } else {
-        setError('Formato de audio no soportado. Solo se permiten archivos WAV.');
+        setError('Formato de audio no soportado. Solo se permiten archivos WAV y MP3.');
         setFile(null);
       }
     }
@@ -259,7 +259,7 @@ const PianoTranscription = () => {
               >
                 <input
                   type="file"
-                  accept=".wav"
+                  accept=".wav,.mp3"
                   onChange={handleFileChange}
                   className="hidden"
                   id="audio-upload"
@@ -303,7 +303,7 @@ const PianoTranscription = () => {
                     {file ? `📁 ${file.name}` : isDragging ? '¡Suelta el archivo aquí!' : 'Haz clic o arrastra un archivo'}
                   </p>
                   <p className="text-blue-300 text-sm">
-                    Solo archivos WAV
+                    Solo archivos WAV o MP3
                   </p>
                 </label>
               </div>
@@ -319,7 +319,7 @@ const PianoTranscription = () => {
                   />
                   <div className="flex-1">
                     <p className="text-sm text-blue-200 leading-relaxed">
-                      Confirmo que mi archivo es un audio en <strong className="text-cyan-300">formato WAV</strong> que contiene <strong className="text-cyan-300">únicamente una interpretación de piano</strong> (sin otros instrumentos o voces), 
+                      Confirmo que mi archivo es un audio en <strong className="text-cyan-300">formato WAV o MP3</strong> que contiene <strong className="text-cyan-300">únicamente una interpretación de piano</strong> (sin otros instrumentos o voces), 
                       con <strong className="text-cyan-300">audio limpio y mínimo ruido de fondo</strong>, 
                       para garantizar la mejor calidad en la transcripción automática.
                     </p>
